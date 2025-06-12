@@ -41,114 +41,6 @@ import h2o
 from h2o.automl import H2OAutoML
 import shap
 ################################################################################################### streamlit configuration
-def get_theme_css(theme):
-    if theme == 'dark':
-        return """
-        <style>
-            .main-header {
-                color: #4ECDC4;
-                background: linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #556270);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            .card {
-                background: rgba(35, 35, 35, 0.7);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-                color: white;
-            }
-            .metric-card {
-                background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-                color: white;
-            }
-            .stButton > button {
-                background-color: #4ECDC4;
-                color: black;
-            }
-            .training-log {
-                background: #1e1e1e;
-                color: #00ff00;
-            }
-            .tooltip {
-                position: relative;
-                display: inline-block;
-                cursor: help;
-            }
-            .tooltip .tooltiptext {
-                visibility: hidden;
-                width: 200px;
-                background-color: #555;
-                color: #fff;
-                text-align: center;
-                border-radius: 6px;
-                padding: 5px;
-                position: absolute;
-                z-index: 1;
-                bottom: 125%;
-                left: 50%;
-                margin-left: -100px;
-                opacity: 0;
-                transition: opacity 0.3s;
-            }
-            .tooltip:hover .tooltiptext {
-                visibility: visible;
-                opacity: 1;
-            }
-        </style>
-        """
-    else:  # Light Mode
-        return """
-        <style>
-            .main-header {
-                color: #2a5298;
-                background: linear-gradient(90deg, #FF6B6B, #4ECDC4, #45B7D1, #2a5298);
-                -webkit-background-clip: text;
-                -webkit-text-fill-color: transparent;
-            }
-            .card {
-                background: rgba(255, 255, 255, 0.9);
-                border: 1px solid rgba(0, 0, 0, 0.1);
-                color: black;
-            }
-            .metric-card {
-                background: linear-gradient(135deg, #e0f7fa 0%, #b3e5fc 100%);
-                color: black;
-            }
-            .stButton > button {
-                background-color: #2a5298;
-                color: white;
-            }
-            .training-log {
-                background: #f5f5f5;
-                color: #006400;
-            }
-            .tooltip {
-                position: relative;
-                display: inline-block;
-                cursor: help;
-            }
-            .tooltip .tooltiptext {
-                visibility: hidden;
-                width: 200px;
-                background-color: #333;
-                color: #fff;
-                text-align: center;
-                border-radius: 6px;
-                padding: 5px;
-                position: absolute;
-                z-index: 1;
-                bottom: 125%;
-                left: 50%;
-                margin-left: -100px;
-                opacity: 0;
-                transition: opacity 0.3s;
-            }
-            .tooltip:hover .tooltiptext {
-                visibility: visible;
-                opacity: 1;
-            }
-        </style>
-        """
-
 st.set_page_config(
     page_title="🚀 ML Studio",
     page_icon="🚀",
@@ -156,10 +48,110 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 3rem;
+        font-weight: 700;
+        background: linear-gradient(90deg, #3a506b, #5bc0be, #1c2541, #b2bec3);
+        background-size: 400% 400%;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: gradient 3s ease infinite;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    
+    @keyframes gradient {
+        0% { background-position: 0% 50%; }
+        50% { background-position: 100% 50%; }
+        100% { background-position: 0% 50%; }
+    }
+    /*---------------------*/
+    .metric-bar {
+        width: 100%;
+        height: 36px;
+        background: linear-gradient(90deg, #5bc0be 0%, #3a506b 100%);
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 0.5rem;
+    }
+    .metric-num {
+        font-size: 1.7rem;
+        font-weight: bold;
+        color: #f4f4f9;
+        letter-spacing: 1px;
+    }
+    .metric-label {
+        text-align: center;
+        font-size: 1rem;
+        color: #e0e1dd;
+        opacity: 0.85;
+    }
+    
+    .metric-card {
+        background: rgba(58, 80, 107, 0.13);
+        padding: 1.5rem;
+        border-radius: 25px;
+        color: #e0e1dd;
+        box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
+        backdrop-filter: blur(4px);
+        border: 2px solid rgba(91, 192, 190, 0.18);
+        margin: 0.5rem 0;
+    }
+    /*---------------------*/
+
+    .success-card {
+        background: linear-gradient(135deg, #5bc0be 0%, #3a506b 100%);
+        padding: 1rem;
+        border-radius: 10px;
+        color: #f4f4f9;
+        margin: 1rem 0;
+    }
+
+    .info-card {
+        background: rgba(44, 62, 80, 0.09);
+        padding: 1rem;
+        border-radius: 10px;
+        border-left: 4px solid #5bc0be;
+        margin: 1rem 0;
+        color: #e0e1dd;
+    }
+
+    .stSelectbox > div > div > select {
+        background-color: #232931;
+        color: #e0e1dd;
+        border: 1px solid #5bc0be;
+    }
+
+    .stSlider > div > div > div > div {
+        background-color: #5bc0be;
+    }
+
+    .sidebar-section {
+        background: rgba(44, 62, 80, 0.07);
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 1rem 0;
+        border: 1px solid rgba(91, 192, 190, 0.10);
+    }
+
+    .training-log {
+        background: #232931;
+        color: #e0e1dd;
+        padding: 1rem;
+        border-radius: 10px;
+        font-family: 'Courier New', monospace;
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #5bc0be;
+    }
+</style>
+""", unsafe_allow_html=True)
+
 # Initialize session state
-if 'theme' not in st.session_state:
-    st.session_state.theme = 'dark'
-st.markdown(get_theme_css(st.session_state.theme), unsafe_allow_html=True)
 if 'page' not in st.session_state:
     st.session_state.page = 'home'
 if 'dataset' not in st.session_state:
@@ -778,12 +770,13 @@ def render_home_page():
         st.markdown("""
         This application guides you through the complete machine learning workflow:
         
-        1. **Data Loading** - Upload your CSV or use sample datasets
+        
+        1. **Data Loading**     - Upload your CSV or use sample datasets
         2. **Data Exploration** - Understand your data with visualizations
-        3. **Preprocessing** - Clean and transform your data
-        4. **Model Training** - Train and tune machine learning models
-        5. **Evaluation** - Assess model performance with metrics and visualizations
-        6. **Export Results** - Save your model and findings
+        3. **Preprocessing**    - Clean and transform your data
+        4. **Model Training**   - Train and tune machine learning models
+        5. **Evaluation**       - Assess model performance with metrics and visualizations
+        6. **Export Results**   - Save your model and findings
         
         To get started, upload a dataset using the sidebar or load a sample dataset.
         """)
@@ -834,28 +827,32 @@ def render_data_exploration_page():
     
     col1, col2, col3, col4 = st.columns(4)
     with col1:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown(f"### {df.shape[0]:,}")
-        st.markdown("Rows")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+            <div class="metric-bar">
+                <span class="metric-num">{df.shape[0]:,}</span>
+            </div>
+            <div class="metric-label">Rows</div>""", unsafe_allow_html=True)
     
     with col2:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown(f"### {df.shape[1]:,}")
-        st.markdown("Columns")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-bar">
+            <span class="metric-num">{df.shape[1]:,}</span>
+        </div>
+        <div class="metric-label">Columns</div>""", unsafe_allow_html=True)
     
     with col3:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown(f"### {df.isna().sum().sum():,}")
-        st.markdown("Missing Values")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-bar">
+            <span class="metric-num">{df.isna().sum().sum():,}</span>
+        </div>
+        <div class="metric-label">Missing Values</div>""", unsafe_allow_html=True)
     
     with col4:
-        st.markdown("<div class='metric-card'>", unsafe_allow_html=True)
-        st.markdown(f"### {df.duplicated().sum():,}")
-        st.markdown("Duplicates")
-        st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="metric-bar">
+            <span class="metric-num">{df.duplicated().sum():,}</span>
+        </div>
+        <div class="metric-label">Duplicates</div>""", unsafe_allow_html=True)
     
     st.markdown("</div>", unsafe_allow_html=True)
     
@@ -1911,20 +1908,27 @@ def render_evaluation_page():
 def render_settings_page():
     st.markdown("<h1 class='main-header'>⚙️ Settings & About</h1>", unsafe_allow_html=True)
     
-    # Settings section
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Application Settings")
-    
-    st.markdown("#### Theme Settings")
-    theme = st.selectbox(
-        "Select Theme",
-        ["Dark", "Light"],
-        index=0 if st.session_state.theme == 'dark' else 1,
-        key="theme_select"
-    )
-    if theme.lower() != st.session_state.theme:
-        st.session_state.theme = theme.lower()
-        st.rerun()
+    # About section (collapsible)
+    with st.expander("ℹ️ About ML Studio", expanded=False):
+        st.markdown("""
+        <div class='card'>
+        <strong>ML Studio</strong> is a professional machine learning platform built with Streamlit, offering an end-to-end workflow:
+        <ul>
+            <li>Data loading, exploration, and preprocessing</li>
+            <li>Feature engineering and selection</li>
+            <li>Model training, tuning, and evaluation</li>
+            <li>Interactive visualizations and export options</li>
+        </ul>
+        <hr>
+        <b>Version:</b> 1.0.0 &nbsp; | &nbsp; <b>Streamlit:</b> 1.24.0 &nbsp; | &nbsp; <b>Python:</b> 3.9+<br>
+        <div style="margin-top: 1em; padding: 1em; background: linear-gradient(90deg, #374151 0%, #4ECDC4 100%); border-radius: 10px; color: #e0f7fa; font-size: 1.1em;">
+            📚 <strong>See more details and source code in the official repo:</strong><br>
+            <a href="https://github.com/Abdelrhman941/ml-preprocessing-guide.git" target="_blank" style="color: #b2f5ea; text-decoration: underline; font-weight: bold;">
+                https://github.com/Abdelrhman941/ml-preprocessing-guide.git
+            </a>
+        </div>
+        </div>
+        """, unsafe_allow_html=True)
     
     # Reset application
     st.markdown("#### Reset Application")
@@ -1955,44 +1959,8 @@ def render_settings_page():
         st.session_state.page = 'home'  # Go back to home page
         st.rerun()
     
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # About section
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### About ML Studio")
-    
-    st.markdown("""
-    **ML Studio** is a comprehensive machine learning application built with Streamlit. It provides an intuitive interface for the complete machine learning workflow:
-    
-    - Data loading and exploration
-    - Data preprocessing and feature engineering
-    - Model training and hyperparameter tuning
-    - Model evaluation and visualization
-    - Results export
-    
-    This application is designed to simplify the machine learning process for both beginners and experienced data scientists.
-    """)
-    
-    st.markdown("#### Features")
-    st.markdown("""
-    - **Multiple Models**: Support for Random Forest, XGBoost, and LightGBM
-    - **Comprehensive Preprocessing**: Missing value handling, outlier detection, feature engineering, encoding, scaling
-    - **Advanced Visualizations**: Interactive plots for data exploration and model evaluation
-    - **Hyperparameter Tuning**: Grid search and random search for optimal model parameters
-    - **Cross-Validation**: Robust model evaluation with k-fold cross-validation
-    - **Export Options**: Save trained models, hyperparameters, and comprehensive reports
-    """)
-    
-    st.markdown("#### Version Information")
-    st.markdown("""
-    - **ML Studio Version**: 1.0.0
-    - **Streamlit Version**: 1.24.0
-    - **Python Version**: 3.9+    - **Last Updated**: July 2023
-    """)
-    
-    st.markdown("</div>", unsafe_allow_html=True)
-    
     create_navigation_buttons()
+
 
 # Render the appropriate page based on session state
 if st.session_state.page == 'home':
