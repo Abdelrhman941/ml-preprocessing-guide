@@ -1,0 +1,27 @@
+# Core ML Studio Dependencies
+# Data manipulation and analysis
+pandas>=1.5.0
+numpy>=1.21.0
+
+# Machine learning
+scikit-learn>=1.1.0
+xgboost>=1.6.0
+lightgbm>=3.3.0
+
+# Imbalanced learning
+imbalanced-learn>=0.9.0
+
+# Statistical analysis
+scipy>=1.9.0
+
+# Visualization
+plotly>=5.10.0
+matplotlib>=3.5.0
+seaborn>=0.11.0
+
+# Web application
+streamlit>=1.25.0
+
+# Optional dependencies for advanced features
+shap>=0.41.0  # For model explainability and SHAP values
+# h2o>=3.40.0   # For AutoML features (optional)
