@@ -1,41 +1,41 @@
 import sys
+import time
 import traceback
-from pathlib import Path
 
+# ------ Test that all modules can be imported successfully ------
 def test_imports():
-    """Test that all modules can be imported successfully."""
     print("🧪 Testing imports...")
     
     try:
-        import gui.utils as utils
+        import utils as utils
         print("✅ utils module imported successfully")
     except ImportError as e:
         print(f"❌ Failed to import utils: {e}")
         return False
     
     try:
-        import config
+        import config as config
         print("✅ config module imported successfully")
     except ImportError as e:
         print(f"❌ Failed to import config: {e}")
         return False
     
     try:
-        import gui.preprocessor as preprocessor
+        import preprocessor as preprocessor
         print("✅ preprocessor module imported successfully")
     except ImportError as e:
         print(f"❌ Failed to import preprocessor: {e}")
         return False
     
     try:
-        import gui.navigation as navigation
+        import navigation as navigation
         print("✅ navigation module imported successfully")
     except ImportError as e:
         print(f"❌ Failed to import navigation: {e}")
         return False
     
     try:
-        import gui.pages as pages
+        import pages as pages
         print("✅ pages module imported successfully")
     except ImportError as e:
         print(f"❌ Failed to import pages: {e}")
@@ -44,14 +44,13 @@ def test_imports():
     return True
 
 def test_utility_functions():
-    """Test utility functions."""
     print("\n🧪 Testing utility functions...")
     
     try:
-        from gui.utils import load_sample_dataset, get_model_params, create_model
+        from utils import load_sample_dataset, get_model_params, create_model
         
         # Test loading sample dataset
-        df, task_type = load_sample_dataset("Iris")
+        df, task_type = load_sample_dataset("Iris (Classification)")    # Replace with your actual dataset name, if sample dataset : write (...)
         if df is not None and task_type == 'classification':
             print("✅ Sample dataset loading works")
         else:
@@ -82,15 +81,14 @@ def test_utility_functions():
         return False
 
 def test_preprocessor():
-    """Test MLPreprocessor class."""
     print("\n🧪 Testing MLPreprocessor...")
     
     try:
-        from gui.preprocessor import MLPreprocessor
-        from gui.utils import load_sample_dataset
+        from preprocessor import MLPreprocessor
+        from utils import load_sample_dataset
         
         # Load test data
-        df, _ = load_sample_dataset("Iris")
+        df, _ = load_sample_dataset("Iris (Classification)")  # Replace with your actual dataset name, if sample dataset : write (...)
         
         # Initialize preprocessor
         preprocessor = MLPreprocessor()
@@ -127,7 +125,6 @@ def test_preprocessor():
         return False
 
 def test_configuration():
-    """Test configuration module."""
     print("\n🧪 Testing configuration...")
     
     try:
@@ -156,7 +153,6 @@ def test_configuration():
         return False
 
 def run_all_tests():
-    """Run all tests and report results."""
     print("🚀 Starting ML Studio Test Suite\n")
     
     tests = [
@@ -167,12 +163,10 @@ def run_all_tests():
     ]
     
     passed = 0
-    total = len(tests)
+    total  = len(tests)
     
     for test_name, test_func in tests:
-        print(f"\n{'='*50}")
-        print(f"Running: {test_name}")
-        print('='*50)
+        print(f"\n{'='*50} Running: {test_name} {'='*50}")
         
         try:
             if test_func():
@@ -184,9 +178,7 @@ def run_all_tests():
             print(f"\n❌ {test_name} CRASHED: {e}")
             traceback.print_exc()
     
-    print(f"\n{'='*60}")
-    print(f"TEST RESULTS: {passed}/{total} tests passed")
-    print('='*60)
+    print(f"\n{'='*60} TEST RESULTS: {passed}/{total} tests passed {'='*60}")
     
     if passed == total:
         print("🎉 All tests passed! The application is ready to run.")
@@ -196,18 +188,17 @@ def run_all_tests():
         return False
 
 def check_dependencies():
-    """Check if all required dependencies are installed."""
     print("📦 Checking dependencies...")
     
     required_packages = [
-        ('pandas', 'pandas'), 
         ('numpy', 'numpy'), 
-        ('sklearn', 'scikit-learn'), 
+        ('pandas', 'pandas'), 
         ('plotly', 'plotly'),
-        ('streamlit', 'streamlit'), 
+        ('sklearn', 'scikit-learn'), 
         ('xgboost', 'xgboost'), 
         ('lightgbm', 'lightgbm'), 
-        ('imblearn', 'imbalanced-learn')
+        ('imblearn', 'imbalanced-learn'),
+        ('streamlit', 'streamlit')
     ]    
     missing_packages = []
     
@@ -216,7 +207,7 @@ def check_dependencies():
             __import__(import_name)
             print(f"✅ {package_name}")
         except ImportError:
-            print(f"❌ {package_name} (missing)")
+            print(f"❌ {package_name} (missing). Try: pip install {package_name}")
             missing_packages.append(package_name)
     
     if missing_packages:
@@ -236,8 +227,15 @@ if __name__ == "__main__":
         print("\n❌ Dependency check failed. Please install missing packages.")
         sys.exit(1)
     
+    start_time = time.time()
+    
     # Run tests
-    if run_all_tests():
+    tests_passed = run_all_tests()
+    
+    duration = time.time() - start_time
+    print(f"⏱️  Duration: {duration:.2f}s")
+    
+    if tests_passed:
         print("\n🚀 Application validation successful!")
         print("You can now run the application using:")
         print("streamlit run ml_studio_app.py")
