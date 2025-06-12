@@ -37,19 +37,25 @@ import lightgbm as lgb
 from gui_code import MLPreprocessor
 
 # Automated ML and Explainability
-import h2o
-from h2o.automl import H2OAutoML
+try:
+    import h2o
+    from h2o.automl import H2OAutoML
+except ImportError:
+    h2o = None
+
+try:
+    import shap
+except ImportError:
+    shap = None
 import shap
 ################################################################################################### streamlit configuration
 st.set_page_config(
     page_title="🚀 ML Studio",
     page_icon="🚀",
     layout="wide",
-    initial_sidebar_state="expanded"
-)
+    initial_sidebar_state="expanded")
 
-st.markdown("""
-<style>
+st.markdown("""<style>
     .main-header {
         font-size: 3rem;
         font-weight: 700;
@@ -59,14 +65,12 @@ st.markdown("""
         -webkit-text-fill-color: transparent;
         animation: gradient 3s ease infinite;
         text-align: center;
-        margin-bottom: 2rem;
-    }
+        margin-bottom: 2rem;}
     
     @keyframes gradient {
         0% { background-position: 0% 50%; }
         50% { background-position: 100% 50%; }
-        100% { background-position: 0% 50%; }
-    }
+        100% { background-position: 0% 50%; } }
     /*---------------------*/
     .metric-bar {
         width: 100%;
@@ -76,20 +80,17 @@ st.markdown("""
         display: flex;
         align-items: center;
         justify-content: center;
-        margin-bottom: 0.5rem;
-    }
+        margin-bottom: 0.5rem;}
     .metric-num {
         font-size: 1.7rem;
         font-weight: bold;
         color: #f4f4f9;
-        letter-spacing: 1px;
-    }
+        letter-spacing: 1px;}
     .metric-label {
         text-align: center;
         font-size: 1rem;
         color: #e0e1dd;
-        opacity: 0.85;
-    }
+        opacity: 0.85;}
     
     .metric-card {
         background: rgba(58, 80, 107, 0.13);
@@ -99,45 +100,38 @@ st.markdown("""
         box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
         backdrop-filter: blur(4px);
         border: 2px solid rgba(91, 192, 190, 0.18);
-        margin: 0.5rem 0;
-    }
+        margin: 0.5rem 0;}
     /*---------------------*/
-
     .success-card {
         background: linear-gradient(135deg, #5bc0be 0%, #3a506b 100%);
         padding: 1rem;
         border-radius: 10px;
         color: #f4f4f9;
-        margin: 1rem 0;
-    }
-
+        margin: 1rem 0;}
+    
     .info-card {
         background: rgba(44, 62, 80, 0.09);
         padding: 1rem;
         border-radius: 10px;
         border-left: 4px solid #5bc0be;
         margin: 1rem 0;
-        color: #e0e1dd;
-    }
-
+        color: #e0e1dd;}
+    
     .stSelectbox > div > div > select {
         background-color: #232931;
         color: #e0e1dd;
-        border: 1px solid #5bc0be;
-    }
-
+        border: 1px solid #5bc0be;}
+    
     .stSlider > div > div > div > div {
-        background-color: #5bc0be;
-    }
-
+        background-color: #5bc0be;}
+    
     .sidebar-section {
         background: rgba(44, 62, 80, 0.07);
         padding: 1rem;
         border-radius: 10px;
         margin: 1rem 0;
-        border: 1px solid rgba(91, 192, 190, 0.10);
-    }
-
+        border: 1px solid rgba(91, 192, 190, 0.10);}
+    
     .training-log {
         background: #232931;
         color: #e0e1dd;
@@ -146,10 +140,8 @@ st.markdown("""
         font-family: 'Courier New', monospace;
         max-height: 300px;
         overflow-y: auto;
-        border: 1px solid #5bc0be;
-    }
-</style>
-""", unsafe_allow_html=True)
+        border: 1px solid #5bc0be;}
+</style>""", unsafe_allow_html=True)
 
 # Initialize session state
 if 'page' not in st.session_state:
@@ -527,8 +519,7 @@ def create_navigation_slides():
         ("📊", "Data Exploration", "data_exploration"),
         ("🔧", "Preprocessing", "preprocessing"),
         ("🧠", "Model Training", "training"),
-        ("📈", "Evaluation", "evaluation"),
-        ("⚙️", "Settings", "settings")
+        ("📈", "Evaluation", "evaluation")
     ]
     
     current_page_index = next((i for i, (_, _, page_id) in enumerate(pages) if page_id == st.session_state.page), 0)
@@ -729,9 +720,7 @@ def create_navigation_buttons():
         ("📊", "Data Exploration", "data_exploration"),
         ("🔧", "Preprocessing", "preprocessing"),
         ("🧠", "Model Training", "training"),
-        ("📈", "Evaluation", "evaluation"),
-        ("⚙️", "Settings", "settings")
-    ]
+        ("📈", "Evaluation", "evaluation")]
     
     current_page_index = next((i for i, (_, _, page_id) in enumerate(pages) if page_id == st.session_state.page), 0)
     
@@ -770,7 +759,6 @@ def render_home_page():
         st.markdown("""
         This application guides you through the complete machine learning workflow:
         
-        
         1. **Data Loading**     - Upload your CSV or use sample datasets
         2. **Data Exploration** - Understand your data with visualizations
         3. **Preprocessing**    - Clean and transform your data
@@ -778,8 +766,7 @@ def render_home_page():
         5. **Evaluation**       - Assess model performance with metrics and visualizations
         6. **Export Results**   - Save your model and findings
         
-        To get started, upload a dataset using the sidebar or load a sample dataset.
-        """)
+        To get started, upload a dataset using the sidebar or load a sample dataset.""")
         st.markdown("</div>", unsafe_allow_html=True)
     
     with col2:
@@ -790,26 +777,7 @@ def render_home_page():
         2. Choose your target variable
         3. Select a model and configure parameters
         4. Click 'Start Training'
-        5. Explore results in the Evaluation page
-        """)
-        st.markdown("</div>", unsafe_allow_html=True)
-        
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("### Supported Models")
-        st.markdown("""
-        - **Random Forest**
-        - **XGBoost**
-        - **LightGBM**
-        """)
-        st.markdown("</div>", unsafe_allow_html=True)
-      # Show dataset preview if loaded
-    if st.session_state.dataset is not None:
-        st.markdown("<div class='card'>", unsafe_allow_html=True)
-        st.markdown("### Dataset Preview")
-        st.dataframe(st.session_state.dataset.head())
-        st.markdown(f"Shape: {st.session_state.dataset.shape[0]} rows, {st.session_state.dataset.shape[1]} columns")
-        st.markdown("</div>", unsafe_allow_html=True)
-    
+        5. Explore results in the Evaluation page""")
     create_navigation_buttons()
 
 def render_data_exploration_page():
@@ -864,15 +832,13 @@ def render_data_exploration_page():
     
     # Data types
     st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Data Types")
-    
+    st.markdown("### Data info")
     dtypes_df = pd.DataFrame({
         'Column': df.columns,
         'Type': df.dtypes.astype(str),
         'Non-Null Count': df.count(),
         'Null Count': df.isna().sum(),
-        'Unique Values': [df[col].nunique() for col in df.columns]
-    })
+        'Unique Values': [df[col].nunique() for col in df.columns] })
     
     st.dataframe(dtypes_df)
     st.markdown("</div>", unsafe_allow_html=True)
@@ -894,29 +860,29 @@ def render_data_exploration_page():
                 fig = px.histogram(
                     df, x=selected_col,
                     marginal="box",
-                    title=f"Distribution of {selected_col}"
-                )
+                    title=f"Distribution of {selected_col}")
                 fig.update_layout(
                     plot_bgcolor='rgba(0,0,0,0)',
                     paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white')
-                )
+                    font=dict(color='white'))
                 st.plotly_chart(fig, use_container_width=True)
-        
         with col2:
             categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
             if categorical_cols:
                 selected_cat_col = st.selectbox("Select column for bar chart", categorical_cols)
+                
+                # Get value counts and reset index with proper column names
+                value_counts_df = df[selected_cat_col].value_counts().reset_index()
+                value_counts_df.columns = [selected_cat_col, 'count']
+                
                 fig = px.bar(
-                    df[selected_cat_col].value_counts().reset_index(),
-                    x='index', y=selected_cat_col,
-                    title=f"Counts of {selected_cat_col}"
-                )
+                    value_counts_df,
+                    x=selected_cat_col, y='count',
+                    title=f"Counts of {selected_cat_col}")
                 fig.update_layout(
                     plot_bgcolor='rgba(0,0,0,0)',
                     paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white')
-                )
+                    font=dict(color='white'))
                 st.plotly_chart(fig, use_container_width=True)
     
     with viz_tabs[1]:
@@ -929,14 +895,12 @@ def render_data_exploration_page():
                 text_auto=True,
                 aspect="auto",
                 color_continuous_scale='Viridis',
-                title="Correlation Heatmap"
-            )
+                title="Correlation Heatmap")
             fig.update_layout(
                 height=600,
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white')
-            )
+                font=dict(color='white'))
             st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No numeric columns available for correlation analysis.")
@@ -955,13 +919,11 @@ def render_data_exploration_page():
                 x='Column', y='Percentage',
                 title="Missing Values by Column (%)",
                 color='Percentage',
-                color_continuous_scale='Viridis'
-            )
+                color_continuous_scale='Viridis')
             fig.update_layout(
                 plot_bgcolor='rgba(0,0,0,0)',
                 paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(color='white')
-            )
+                font=dict(color='white'))
             st.plotly_chart(fig, use_container_width=True)
             
             st.dataframe(missing_df)
@@ -972,22 +934,22 @@ def render_data_exploration_page():
         # Target variable analysis
         if st.session_state.target:
             target_col = st.session_state.target
-            
             if st.session_state.task_type == 'classification':
                 # Classification target distribution
+                target_counts_df = df[target_col].value_counts().reset_index()
+                target_counts_df.columns = [target_col, 'count']
+                
                 fig = px.bar(
-                    df[target_col].value_counts().reset_index(),
-                    x='index', y=target_col,
+                    target_counts_df,
+                    x=target_col, y='count',
                     title=f"Distribution of Target Variable: {target_col}",
-                    color='index'
-                )
+                    color=target_col)
                 fig.update_layout(
                     xaxis_title="Class",
                     yaxis_title="Count",
                     plot_bgcolor='rgba(0,0,0,0)',
                     paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white')
-                )
+                    font=dict(color='white'))
                 st.plotly_chart(fig, use_container_width=True)
                 
                 # Class balance analysis
@@ -1006,13 +968,11 @@ def render_data_exploration_page():
                 fig = px.histogram(
                     df, x=target_col,
                     title=f"Distribution of Target Variable: {target_col}",
-                    marginal="box"
-                )
+                    marginal="box")
                 fig.update_layout(
                     plot_bgcolor='rgba(0,0,0,0)',
                     paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(color='white')
-                )
+                    font=dict(color='white'))
                 st.plotly_chart(fig, use_container_width=True)
                 
                 # Target statistics
@@ -1024,13 +984,10 @@ def render_data_exploration_page():
                         df[target_col].std(),
                         df[target_col].min(),
                         df[target_col].max(),
-                        df[target_col].skew()
-                    ]
-                })
+                        df[target_col].skew()] })
                 st.dataframe(stats_df)
-        else:            st.info("Please select a target variable in the sidebar.")
-    
-    st.markdown("</div>", unsafe_allow_html=True)
+        else:            
+            st.info("Please select a target variable in the sidebar.")
     
     create_navigation_buttons()
 
@@ -1070,14 +1027,16 @@ def render_preprocessing_page():
             <div class='tooltip'>Selected Strategy: {missing_strategy}
                 <span class='tooltiptext'>{missing_strategy_tooltips.get(missing_strategy, 'Choose a strategy to handle missing data.')}</span>
             </div>
-            """, unsafe_allow_html=True)
+            """, unsafe_allow_html=True)            
             if st.button("Apply Missing Values Strategy"):
                 try:
                     if missing_strategy in ["Mean imputation", "Median imputation"] and not df[missing_cols].select_dtypes(include=['number']).columns.tolist():
                         st.error("Mean or Median imputation requires numerical columns with missing values.")
                         return
+                    
                     if missing_strategy == "Drop rows" and df[missing_cols].isna().sum().sum() > len(df) * 0.5:
                         st.warning("Dropping rows will remove more than 50% of the data. Consider imputation instead.")
+                    
                     if missing_strategy == "Drop rows":
                         df = preprocessor.handle_missing_data(df, strategy='drop_rows')
                     elif missing_strategy == "Drop columns":
@@ -1098,7 +1057,62 @@ def render_preprocessing_page():
                     st.error(f"Error applying missing values strategy: {e}")
         else:
             st.info("No missing values found in the dataset.")
-    
+        
+        # Add duplicate removal section
+        st.markdown("---")
+        st.markdown("#### Remove Duplicates")
+        
+        # Detect duplicates first
+        duplicate_analysis = preprocessor.detect_duplicates(df)
+        total_duplicates = duplicate_analysis['duplicate_rows']
+        
+        if total_duplicates > 0:
+            st.warning(f"Found {total_duplicates} duplicate rows ({duplicate_analysis['duplicate_percentage']:.2f}% of dataset)")
+            
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # Keep strategy selection
+                keep_strategy = st.selectbox(
+                    "Keep strategy",
+                    ["first", "last", "none"],
+                    help="first: Keep first occurrence, last: Keep last occurrence, none: Remove all duplicates"
+                )
+            
+            with col2:
+                # Subset selection for duplicate detection
+                subset_option = st.selectbox(
+                    "Duplicate detection based on",
+                    ["All columns", "Specific columns"]
+                )
+            
+            subset_cols = None
+            if subset_option == "Specific columns":
+                subset_cols = st.multiselect(
+                    "Select columns for duplicate detection",
+                    df.columns.tolist(),
+                    help="Only these columns will be considered for finding duplicates"
+                )
+            
+            if st.button("Remove Duplicates"):
+                try:
+                    # Remove duplicates based on user selection
+                    keep_value = False if keep_strategy == "none" else keep_strategy
+                    df = preprocessor.remove_duplicates(df, subset=subset_cols, keep=keep_value)
+                    
+                    st.session_state.dataset = df
+                    removed_count = total_duplicates - len(df[df.duplicated(subset=subset_cols)])
+                    st.success(f"Removed {removed_count} duplicate rows using '{keep_strategy}' strategy")
+                    
+                    # Update preprocessing steps
+                    subset_info = f" (based on {subset_cols})" if subset_cols else ""
+                    st.session_state.preprocessing_steps.append(f"Removed {removed_count} duplicates (keep={keep_strategy}){subset_info}")
+                    
+                except Exception as e:
+                    st.error(f"Error removing duplicates: {e}")
+        else:
+            st.success("✅ No duplicate rows found in the dataset!")
+            
     with preprocessing_tabs[1]:
         # Outlier handling
         st.markdown("#### Handle Outliers")
@@ -1123,17 +1137,36 @@ def render_preprocessing_page():
                 
                 if st.button("Detect and Handle Outliers"):
                     try:
-                        # Detect outliers
-                        detection_method = outlier_method.lower() if outlier_method != "IQR" else "iqr"
+                        # Detect outliers - fix method mapping
+                        method_mapping = {
+                            "IQR": "iqr",
+                            "Z-Score": "zscore", 
+                            "Modified Z-Score": "modified_zscore"
+                        }
+                        detection_method = method_mapping.get(outlier_method, "iqr")
                         outliers = preprocessor.detect_outliers(df, method=detection_method, columns=selected_cols)
                         
                         # Display outlier counts
                         outlier_counts = {col: len(indices) for col, indices in outliers.items()}
-                        st.write("Outlier counts:", outlier_counts)
+                        st.write("**Outlier Detection Results:**")
+                        
+                        # Create a summary dataframe for display
+                        summary_df = pd.DataFrame({
+                            'Column': list(outlier_counts.keys()),
+                            'Number of Outliers': list(outlier_counts.values()),
+                            'Percentage': [(count/len(df))*100 for count in outlier_counts.values()]
+                        })
+                        st.dataframe(summary_df)
+                        
+                        total_outliers = sum(outlier_counts.values())
+                        if total_outliers > 0:
+                            st.info(f"Found {total_outliers} outliers total across {len(outlier_counts)} columns using {outlier_method} method.")
+                        else:
+                            st.success("No outliers detected!")
                         
                         # Handle outliers if treatment selected
-                        if outlier_treatment != "None":
-                            treatment_method = outlier_treatment.lower()
+                        if outlier_treatment != "None" and total_outliers > 0:
+                            treatment_method = outlier_treatment.lower().replace(" ", "_")
                             df = preprocessor.handle_outliers(
                                 df, 
                                 method=treatment_method,
@@ -1200,7 +1233,7 @@ def render_preprocessing_page():
             
             if bin_col and st.button("Apply Binning"):
                 try:
-                    df = preprocessor.bin_feature(df, bin_col, method=bin_method.lower().replace(" ", "_"), bins=num_bins)
+                    df = preprocessor.create_binned_features(df, bin_col, bins=num_bins)
                     st.session_state.dataset = df
                     st.success(f"Applied {bin_method} binning to {bin_col} with {num_bins} bins")
                     st.session_state.preprocessing_steps.append(f"Binned {bin_col} into {num_bins} bins")
@@ -1291,15 +1324,15 @@ def render_preprocessing_page():
             if selected_cols and st.button("Apply Scaling"):
                 try:
                     if scaling_method == "StandardScaler":
-                        df = preprocessor.scale_features(df, selected_cols, method='standard')
+                        df = preprocessor.scale_features(df, method='standard', columns=selected_cols)
                     elif scaling_method == "MinMaxScaler":
-                        df = preprocessor.scale_features(df, selected_cols, method='minmax')
+                        df = preprocessor.scale_features(df, method='minmax', columns=selected_cols)
                     elif scaling_method == "RobustScaler":
-                        df = preprocessor.scale_features(df, selected_cols, method='robust')
+                        df = preprocessor.scale_features(df, method='robust', columns=selected_cols)
                     elif scaling_method == "Normalizer":
-                        df = preprocessor.scale_features(df, selected_cols, method='normalizer')
+                        df = preprocessor.scale_features(df, method='normalizer', columns=selected_cols)
                     elif scaling_method == "MaxAbsScaler":
-                        df = preprocessor.scale_features(df, selected_cols, method='maxabs')
+                        df = preprocessor.scale_features(df, method='maxabs', columns=selected_cols)
                     
                     st.session_state.dataset = df
                     st.success(f"Applied {scaling_method} to {', '.join(selected_cols)}")
@@ -1316,14 +1349,13 @@ def render_preprocessing_page():
         if st.session_state.target:
             selection_method = st.selectbox(
                 "Feature selection method",
-                ["Correlation-based", "Variance Threshold", "Feature Importance", "Recursive Feature Elimination", "SelectKBest"]
-            )
+                ["Correlation-based", "Variance Threshold", "Feature Importance", "Recursive Feature Elimination", "SelectKBest"])
             
             if selection_method == "Correlation-based":
                 corr_threshold = st.slider("Correlation threshold", 0.0, 1.0, 0.8, 0.01)
                 if st.button("Apply Correlation-based Selection"):
                     try:
-                        df, selected_features = preprocessor.select_features(df, method='correlation', threshold=corr_threshold, target=st.session_state.target)
+                        df, selected_features = preprocessor.select_features(df, st.session_state.target, method='correlation', threshold=corr_threshold)
                         st.session_state.dataset = df
                         st.success(f"Selected {len(selected_features)} features based on correlation threshold {corr_threshold}")
                         st.write("Selected features:", selected_features)
@@ -1335,7 +1367,7 @@ def render_preprocessing_page():
                 var_threshold = st.slider("Variance threshold", 0.0, 1.0, 0.1, 0.01)
                 if st.button("Apply Variance Threshold Selection"):
                     try:
-                        df, selected_features = preprocessor.select_features(df, method='variance', threshold=var_threshold)
+                        df, selected_features = preprocessor.select_features(df, st.session_state.target, method='variance', threshold=var_threshold)
                         st.session_state.dataset = df
                         st.success(f"Selected {len(selected_features)} features based on variance threshold {var_threshold}")
                         st.write("Selected features:", selected_features)
@@ -1347,7 +1379,7 @@ def render_preprocessing_page():
                 n_features = st.slider("Number of features to select", 1, len(df.columns) - 1, min(5, len(df.columns) - 1))
                 if st.button("Apply Feature Importance Selection"):
                     try:
-                        df, selected_features = preprocessor.select_features(df, method='importance', n_features=n_features, target=st.session_state.target)
+                        df, selected_features = preprocessor.select_features(df, st.session_state.target, method='importance', n_features=n_features)
                         st.session_state.dataset = df
                         st.success(f"Selected top {len(selected_features)} features based on importance")
                         st.write("Selected features:", selected_features)
@@ -1359,7 +1391,7 @@ def render_preprocessing_page():
                 n_features = st.slider("Number of features to select", 1, len(df.columns) - 1, min(5, len(df.columns) - 1))
                 if st.button("Apply RFE Selection"):
                     try:
-                        df, selected_features = preprocessor.select_features(df, method='rfe', n_features=n_features, target=st.session_state.target)
+                        df, selected_features = preprocessor.select_features(df, st.session_state.target, method='rfe', n_features=n_features)
                         st.session_state.dataset = df
                         st.success(f"Selected {len(selected_features)} features using RFE")
                         st.write("Selected features:", selected_features)
@@ -1372,7 +1404,7 @@ def render_preprocessing_page():
                 score_func = st.selectbox("Scoring function", ["f_classif", "chi2", "mutual_info_classif", "f_regression", "mutual_info_regression"])
                 if st.button("Apply SelectKBest Selection"):
                     try:
-                        df, selected_features = preprocessor.select_features(df, method='kbest', n_features=n_features, score_func=score_func, target=st.session_state.target)
+                        df, selected_features = preprocessor.select_features(df, st.session_state.target, method='kbest', n_features=n_features, score_func=score_func)
                         st.session_state.dataset = df
                         st.success(f"Selected {len(selected_features)} features using SelectKBest with {score_func}")
                         st.write("Selected features:", selected_features)
@@ -1464,20 +1496,19 @@ def render_preprocessing_page():
                         st.session_state.y_val = None
                         
                         st.success(f"Data split into train ({len(X_train)} samples) and test ({len(X_test)} samples) sets")
-                    
-                    # Check for class imbalance in classification tasks
+                      # Check for class imbalance in classification tasks
                     if st.session_state.task_type == 'classification':
-                        imbalance_detected, imbalance_ratio, recommendation = preprocessor.detect_class_imbalance(y_train)
+                        imbalance_analysis = preprocessor.detect_class_imbalance(y_train)
                         
-                        if imbalance_detected:
-                            st.warning(f"Class imbalance detected (ratio: {imbalance_ratio:.2f}:1). {recommendation}")
+                        if imbalance_analysis['is_imbalanced']:
+                            st.warning(f"Class imbalance detected (ratio: {imbalance_analysis['imbalance_ratio']:.2f}:1). {imbalance_analysis['recommendation']}")
                     
                     st.session_state.preprocessing_steps.append(f"Split data into train/test sets (test size: {test_size})")
                 except Exception as e:
                     st.error(f"Error splitting data: {e}")
         else:
             st.info("Please select a target variable in the sidebar first.")
-      # Display preprocessing steps
+    # Display preprocessing steps
     if st.session_state.preprocessing_steps:
         st.markdown("<div class='card'>", unsafe_allow_html=True)
         st.markdown("### Preprocessing Steps Applied")
@@ -1598,9 +1629,22 @@ def render_training_page():
                             n_jobs=-1,
                             random_state=42
                         )
-                    
-                    # Fit tuner
+                      # Fit tuner
                     start_time = time.time()
+                    
+                    # Validate X_train shape before tuning
+                    if not hasattr(st.session_state.X_train, 'shape') or len(st.session_state.X_train.shape) != 2:
+                        add_log(f"⚠️ X_train shape issue: {getattr(st.session_state.X_train, 'shape', 'no shape')}")
+                        # Reshape if it's a 1D array
+                        if hasattr(st.session_state.X_train, 'values'):
+                            if len(st.session_state.X_train.values.shape) == 1:
+                                add_log("Reshaping 1D X_train to 2D array")
+                                st.session_state.X_train = st.session_state.X_train.values.reshape(-1, 1)
+                        elif hasattr(st.session_state.X_train, 'reshape'):
+                            add_log("Reshaping scalar/1D X_train to 2D array")
+                            st.session_state.X_train = st.session_state.X_train.reshape(-1, 1)
+                    
+                    add_log(f"Training data shape: X_train {st.session_state.X_train.shape}, y_train {st.session_state.y_train.shape}")
                     tuner.fit(st.session_state.X_train, st.session_state.y_train)
                     training_time = time.time() - start_time
                     
@@ -1638,8 +1682,20 @@ def render_training_page():
                             metric=st.session_state.metric
                         )
                         add_log(f"Cross-validation score: {cv_score:.4f} (±{cv_std:.4f})")
+                      # Fit on full training data
+                    # Validate X_train shape before fitting
+                    if not hasattr(st.session_state.X_train, 'shape') or len(st.session_state.X_train.shape) != 2:
+                        add_log(f"⚠️ X_train shape issue: {getattr(st.session_state.X_train, 'shape', 'no shape')}")
+                        # Reshape if it's a 1D array
+                        if hasattr(st.session_state.X_train, 'values'):
+                            if len(st.session_state.X_train.values.shape) == 1:
+                                add_log("Reshaping 1D X_train to 2D array")
+                                st.session_state.X_train = st.session_state.X_train.values.reshape(-1, 1)
+                        elif hasattr(st.session_state.X_train, 'reshape'):
+                            add_log("Reshaping scalar/1D X_train to 2D array")
+                            st.session_state.X_train = st.session_state.X_train.reshape(-1, 1)
                     
-                    # Fit on full training data
+                    add_log(f"Training data shape: X_train {st.session_state.X_train.shape}, y_train {st.session_state.y_train.shape}")
                     base_model.fit(st.session_state.X_train, st.session_state.y_train)
                     training_time = time.time() - start_time
                     
@@ -1705,7 +1761,7 @@ def render_training_page():
             except Exception as e:
                 add_log(f"Error during training: {e}")
                 st.error(f"Training failed: {e}")
-      # Display training logs
+    # Display training logs
     if st.session_state.training_logs:
         log_content = "\n".join(st.session_state.training_logs)
         log_placeholder.markdown(f"<div class='training-log'>{log_content}</div>", unsafe_allow_html=True)
@@ -1905,62 +1961,173 @@ def render_evaluation_page():
     
     create_navigation_buttons()
 
+def render_training_page():
+    st.markdown("<h1 class='main-header'>🧠 Model Training</h1>", unsafe_allow_html=True)
+    
+    if st.session_state.dataset is None:
+        st.warning("Please load a dataset first.")
+        return
+    
+    if st.session_state.target is None:
+        st.warning("Please select a target variable first.")
+        return
+    
+    # Training configuration
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("### Model Configuration")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        model_name = st.selectbox(
+            "Select Model",
+            ["Random Forest", "XGBoost", "LightGBM"]
+        )
+    
+    with col2:
+        if st.session_state.task_type == 'classification':
+            metric = st.selectbox(
+                "Evaluation Metric",
+                ["accuracy", "f1", "precision", "recall", "auc"]
+            )
+        else:
+            metric = st.selectbox(
+                "Evaluation Metric", 
+                ["mse", "mae", "r2"]
+            )
+    
+    with col3:
+        use_cv = st.checkbox("Use Cross Validation", value=True)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Training button
+    if st.button("🚀 Start Training", type="primary", use_container_width=True):
+        try:
+            # Prepare data
+            df = st.session_state.dataset
+            X = df.drop(columns=[st.session_state.target])
+            y = df[st.session_state.target]
+            
+            if st.session_state.X_train is None:
+                from sklearn.model_selection import train_test_split
+                X_train, X_test, y_train, y_test = train_test_split(
+                    X, y, test_size=0.2, random_state=42,
+                    stratify=y if st.session_state.task_type == 'classification' else None
+                )
+                st.session_state.X_train = X_train
+                st.session_state.X_test = X_test
+                st.session_state.y_train = y_train
+                st.session_state.y_test = y_test
+              # Create and train model
+            model_params = {}  # Use default parameters
+            model = create_model(model_name, model_params, st.session_state.task_type)
+            
+            # Validate X_train shape before fitting
+            if not hasattr(st.session_state.X_train, 'shape') or len(st.session_state.X_train.shape) != 2:
+                add_log(f"⚠️ X_train shape issue: {getattr(st.session_state.X_train, 'shape', 'no shape')}")
+                # Reshape if it's a 1D array
+                if hasattr(st.session_state.X_train, 'values'):
+                    if len(st.session_state.X_train.values.shape) == 1:
+                        add_log("Reshaping 1D X_train to 2D array")
+                        st.session_state.X_train = st.session_state.X_train.values.reshape(-1, 1)
+                elif hasattr(st.session_state.X_train, 'reshape'):
+                    add_log("Reshaping scalar/1D X_train to 2D array")
+                    st.session_state.X_train = st.session_state.X_train.reshape(-1, 1)
+            
+            add_log(f"Training data shape: X_train {st.session_state.X_train.shape}, y_train {st.session_state.y_train.shape}")
+            model.fit(st.session_state.X_train, st.session_state.y_train)
+            st.session_state.best_model = model
+            st.session_state.best_params = model_params
+            
+            # Evaluate model
+            test_predictions = model.predict(st.session_state.X_test)
+            
+            if st.session_state.task_type == 'classification':
+                test_score = accuracy_score(st.session_state.y_test, test_predictions)
+            else:
+                test_score = r2_score(st.session_state.y_test, test_predictions)
+            
+            st.session_state.training_results = {
+                'test_score': test_score,
+                'model_name': model_name,
+                'metric': metric
+            }
+            
+            add_log(f"Model trained: {model_name}")
+            add_log(f"Test {metric}: {test_score:.4f}")
+            
+            st.success("🎉 Training completed successfully!")
+            st.metric(f"Test {metric.upper()}", f"{test_score:.4f}")
+            
+        except Exception as e:
+            st.error(f"Error during training: {e}")
+    
+    create_navigation_buttons()
+
+def render_evaluation_page():
+    st.markdown("<h1 class='main-header'>📈 Model Evaluation</h1>", unsafe_allow_html=True)
+    
+    if st.session_state.best_model is None:
+        st.warning("Please train a model first.")
+        return
+    
+    # Model performance overview
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("### Model Performance")
+    
+    test_score = st.session_state.training_results.get('test_score', 0)
+    model_name = st.session_state.training_results.get('model_name', 'Unknown')
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Model", model_name)
+    with col2:
+        st.metric("Test Score", f"{test_score:.4f}")
+    
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    # Predictions
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("### Predictions")
+    
+    test_predictions = st.session_state.best_model.predict(st.session_state.X_test)
+    
+    results_df = pd.DataFrame({
+        'Actual': st.session_state.y_test.reset_index(drop=True),
+        'Predicted': test_predictions
+    })
+    
+    st.dataframe(results_df.head(10))
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    create_navigation_buttons()
+
 def render_settings_page():
-    st.markdown("<h1 class='main-header'>⚙️ Settings & About</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 class='main-header'>⚙️ Settings</h1>", unsafe_allow_html=True)
     
-    # About section (collapsible)
-    with st.expander("ℹ️ About ML Studio", expanded=False):
-        st.markdown("""
-        <div class='card'>
-        <strong>ML Studio</strong> is a professional machine learning platform built with Streamlit, offering an end-to-end workflow:
-        <ul>
-            <li>Data loading, exploration, and preprocessing</li>
-            <li>Feature engineering and selection</li>
-            <li>Model training, tuning, and evaluation</li>
-            <li>Interactive visualizations and export options</li>
-        </ul>
-        <hr>
-        <b>Version:</b> 1.0.0 &nbsp; | &nbsp; <b>Streamlit:</b> 1.24.0 &nbsp; | &nbsp; <b>Python:</b> 3.9+<br>
-        <div style="margin-top: 1em; padding: 1em; background: linear-gradient(90deg, #374151 0%, #4ECDC4 100%); border-radius: 10px; color: #e0f7fa; font-size: 1.1em;">
-            📚 <strong>See more details and source code in the official repo:</strong><br>
-            <a href="https://github.com/Abdelrhman941/ml-preprocessing-guide.git" target="_blank" style="color: #b2f5ea; text-decoration: underline; font-weight: bold;">
-                https://github.com/Abdelrhman941/ml-preprocessing-guide.git
-            </a>
-        </div>
-        </div>
-        """, unsafe_allow_html=True)
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.markdown("### Application Settings")
     
-    # Reset application
-    st.markdown("#### Reset Application")
-    if st.button("Reset All Data", key="reset_app"):
-        # Reset all session state variables
-        for key in list(st.session_state.keys()):
-            if key != 'page':  # Keep the current page
-                del st.session_state[key]
-        
-        # Reinitialize necessary session state variables
+    if st.button("🗑️ Clear All Data"):
         st.session_state.dataset = None
         st.session_state.target = None
         st.session_state.task_type = None
-        st.session_state.training_logs = []
-        st.session_state.best_model = None
-        st.session_state.best_params = {}
-        st.session_state.training_results = {}
-        st.session_state.preprocessor = MLPreprocessor()
         st.session_state.X_train = None
         st.session_state.X_test = None
         st.session_state.y_train = None
         st.session_state.y_test = None
-        st.session_state.feature_importance = None
-        st.session_state.confusion_matrix = None
+        st.session_state.best_model = None
+        st.session_state.best_params = {}
+        st.session_state.training_results = {}
         st.session_state.preprocessing_steps = []
-        
-        st.success("Application has been reset. All data and models have been cleared.")
-        st.session_state.page = 'home'  # Go back to home page
+        st.session_state.training_logs = []
+        st.success("All data cleared!")
         st.rerun()
     
+    st.markdown("</div>", unsafe_allow_html=True)
+    
     create_navigation_buttons()
-
 
 # Render the appropriate page based on session state
 if st.session_state.page == 'home':
@@ -1974,5 +2141,7 @@ elif st.session_state.page == 'training':
 elif st.session_state.page == 'evaluation':
     render_evaluation_page()
 elif st.session_state.page == 'settings':
-    render_settings_page()
+    # Redirect settings page to home since it's been removed
+    st.session_state.page = 'home'
+    st.rerun()
 ##################################################################################################
