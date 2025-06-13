@@ -108,8 +108,8 @@ ml-studio/
 ├── assets/dataset/          # Sample datasets (heart.csv)
 ├── config/                  # Configuration files and settings
 ├── guide/                   # Documentation and user guides
-│   ├── USER_GUIDE.md       # End-user documentation
-│   └── EXPLAIN_PROCESS.md  # Process explanation
+│   ├── USER_GUIDE.md        # End-user documentation
+│   └── EXPLAIN_PROCESS.md   # Process explanation
 ├── pages/                   # Streamlit page components
 ├── preprocessing/           # Data preprocessing modules
 ├── training/                # ML model training modules
