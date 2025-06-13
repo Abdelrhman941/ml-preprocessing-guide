@@ -14,7 +14,7 @@ from pages import (
 
 # Configure Streamlit page
 st.set_page_config(
-    page_title  = "🚀 ML Studio",
+    page_title  = "ML Studio",
     page_icon   = "🚀",
     layout      = "wide",
     initial_sidebar_state = "expanded"

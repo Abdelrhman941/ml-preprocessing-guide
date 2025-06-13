@@ -5,7 +5,7 @@ numpy>=1.21.0
 
 # Machine learning
 scikit-learn>=1.1.0
-xgboost>=1.6.0
+xgboost>=3.0.0  # Fixed sklearn_tags compatibility issue
 lightgbm>=3.3.0
 
 # Imbalanced learning

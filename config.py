@@ -1,6 +1,6 @@
 # Application Settings
 APP_CONFIG = {
-    "title"             : "🚀 ML Studio",
+    "title"             : "ML Studio",
     "version"           : "2.0.0",
     "page_icon"         : "🚀",
     "layout"            : "wide",

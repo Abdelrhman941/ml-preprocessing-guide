@@ -410,8 +410,7 @@ def _render_regression_target_analysis(df, target_col):
             df, x=target_col,
             title=f"Distribution of {target_col}",
             marginal="box",
-            color_discrete_sequence=['#5bc0be']
-        )
+            color_discrete_sequence=['#5bc0be']        )
         st.plotly_chart(fig, use_container_width=True)
     
     with col2:
@@ -419,13 +418,13 @@ def _render_regression_target_analysis(df, target_col):
         stats_df = pd.DataFrame({
             'Statistic': ['Mean', 'Median', 'Std Dev', 'Min', 'Max', 'Skewness', 'Kurtosis'],
             'Value': [
-                df[target_col].mean(),
-                df[target_col].median(),
-                df[target_col].std(),
-                df[target_col].min(),
-                df[target_col].max(),
-                df[target_col].skew(),
-                df[target_col].kurtosis()
+                f"{df[target_col].mean():.4f}",
+                f"{df[target_col].median():.4f}",
+                f"{df[target_col].std():.4f}",
+                f"{df[target_col].min():.4f}",
+                f"{df[target_col].max():.4f}",
+                f"{df[target_col].skew():.4f}",
+                f"{df[target_col].kurtosis():.4f}"
             ]
         })
         st.dataframe(stats_df, use_container_width=True)
@@ -529,10 +528,12 @@ def _render_missing_values_handling(df, preprocessor):
                         df, 
                         strategy={col: strategy_map[strategy] for col in missing_cols}
                     )
-                    st.session_state.preprocessing_steps.append(f"Applied {strategy} to {len(missing_cols)} columns")
+                    st.session_state.preprocessing_steps.append(f"Applied {strategy} to {len(missing_cols)} columns")                    
                     st.toast(f"🔧 {strategy} applied successfully!", icon="✅")
                     st.success(f"✅ {strategy} applied to {len(missing_cols)} columns with missing values.")
                 
+                # Ensure Arrow compatibility before storing
+                processed_df = preprocessor.ensure_arrow_compatibility(processed_df)
                 st.session_state.dataset = processed_df
                 st.markdown("---")
                 st.rerun()
@@ -572,17 +573,21 @@ def _render_feature_engineering(df, preprocessor):
             
             if st.button("Create Datetime Features", type="primary"):
                 try:
-                    with st.spinner("⏳ Creating datetime features... Please wait."):
+                    with st.spinner("⏳ Creating datetime features... Please wait."):                        
                         df_engineered = preprocessor.create_datetime_features(
-                            df, selected_datetime_cols, feature_options
-                        )
+                        df, selected_datetime_cols, feature_options)
                         
+                        # Ensure Arrow compatibility before storing
+                        df_engineered = preprocessor.ensure_arrow_compatibility(df_engineered)
                         st.session_state.dataset = df_engineered
                         
                         # Add to preprocessing steps for summary (no UI message shown)
                         new_features = [col for col in df_engineered.columns if col not in df.columns]
                         step_msg = f"Created {len(new_features)} datetime features from {len(selected_datetime_cols)} columns"
                         st.session_state.preprocessing_steps.append(step_msg)
+                        
+                        st.success(f"✅ Created {len(new_features)} datetime features successfully!")
+                        st.toast(f"📅 Datetime features created!", icon="✅")
                         
                         st.markdown("---")
                         st.rerun()
@@ -598,7 +603,7 @@ def _render_feature_engineering(df, preprocessor):
             return
         
         st.markdown("##### Create Mathematical Features")
-          # Simple interface for common operations
+        # Simple interface for common operations
         col1, col2 = st.columns(2)
         
         with col1:
@@ -616,15 +621,19 @@ def _render_feature_engineering(df, preprocessor):
                         feature_name: {
                             'operation': operation,
                             'columns': [col1_select, col2_select]
-                        }
-                    }
+                        }                    }
                     
                     df_engineered = preprocessor.create_mathematical_features(df, feature_operations)
+                    # Ensure Arrow compatibility before storing
+                    df_engineered = preprocessor.ensure_arrow_compatibility(df_engineered)
                     st.session_state.dataset = df_engineered
                     
                     # Add to preprocessing steps for summary (no UI message shown)
                     step_msg = f"Created mathematical feature '{feature_name}' using {operation} of {col1_select} and {col2_select}"
                     st.session_state.preprocessing_steps.append(step_msg)
+                    
+                    st.success(f"✅ Created mathematical feature '{feature_name}' successfully!")
+                    st.toast(f"🧮 Mathematical feature created!", icon="✅")
                     
                     st.markdown("---")
                     st.rerun()
@@ -645,15 +654,22 @@ def _render_feature_engineering(df, preprocessor):
         
         with col1:
             source_col = st.selectbox("Select column to bin", numeric_cols)
-            feature_name = st.text_input("Binned feature name", placeholder=f"{source_col}_binned")
+            feature_name = st.text_input("Binned feature name", placeholder=f"{source_col}_binned")            
             method = st.selectbox("Binning method", ["equal_width", "equal_freq", "custom"])
         
         with col2:
             if method in ["equal_width", "equal_freq"]:
                 n_bins = st.slider("Number of bins", 2, 10, 5)
-                labels = st.text_input("Labels (optional, comma-separated)", placeholder="Low,Medium,High")
+                st.info(f"💡 For {n_bins} bins, provide {n_bins} labels (or leave empty for automatic)")
+                labels = st.text_input("Labels (optional, comma-separated)", placeholder=f"Low,Medium,High,Very High" if n_bins == 4 else "Low,Medium,High")
             elif method == "custom":
                 bin_edges_str = st.text_input("Bin edges (comma-separated)", placeholder="0,25,50,75,100")
+                if bin_edges_str:
+                    try:
+                        edges_count = len([float(x.strip()) for x in bin_edges_str.split(',')])
+                        st.info(f"💡 For {edges_count} bin edges, provide {edges_count-1} labels (or leave empty)")
+                    except:
+                        st.warning("⚠️ Please provide valid numeric bin edges")
                 labels = st.text_input("Labels (optional, comma-separated)", placeholder="Very Low,Low,Medium,High")
         
         if feature_name and source_col and st.button("Create Binned Feature", type="primary"):
@@ -677,12 +693,31 @@ def _render_feature_engineering(df, preprocessor):
                             if labels:
                                 binning_config[feature_name]['labels'] = [l.strip() for l in labels.split(',')]
                     
-                    df_engineered = preprocessor.create_binning_features(df, binning_config)
+                    df_engineered, success_messages, error_messages = preprocessor.create_binning_features(df, binning_config)
+                    
+                    # Display messages in Streamlit UI
+                    if error_messages:
+                        for error_msg in error_messages:
+                            st.error(error_msg)
+                        # Don't proceed if there were errors
+                        return
+                    
+                    if success_messages:
+                        for success_msg in success_messages:
+                            if success_msg.startswith("✅"):
+                                st.success(success_msg)
+                            elif success_msg.startswith("📝"):
+                                st.info(success_msg)
+                    
+                    # Ensure Arrow compatibility before storing
+                    df_engineered = preprocessor.ensure_arrow_compatibility(df_engineered)
                     st.session_state.dataset = df_engineered
                     
-                    # Add to preprocessing steps for summary (no UI message shown)
-                    step_msg = f"Created binned feature '{feature_name}' from {source_col} using {method} method"
-                    st.session_state.preprocessing_steps.append(step_msg)
+                    # Add to preprocessing steps for summary
+                    if success_messages:
+                        step_msg = f"Created binned feature '{feature_name}' from {source_col} using {method} method"
+                        st.session_state.preprocessing_steps.append(step_msg)
+                        st.toast(f"🎯 Feature '{feature_name}' created!", icon="✅")
                     
                     st.markdown("---")
                     st.rerun()
@@ -733,8 +768,15 @@ def _render_encoding_options(df):
                     step_msg = f"Applied One-Hot Encoding to: {', '.join(selected_cols)}"
                     st.success(f"✅ One-hot encoding applied to {len(selected_cols)} columns, creating {new_cols} new features.")
                 
+                # Ensure Arrow compatibility before storing
+                from preprocessor import MLPreprocessor
+                if 'preprocessor' not in st.session_state:
+                    st.session_state.preprocessor = MLPreprocessor()
+                df_encoded = st.session_state.preprocessor.ensure_arrow_compatibility(df_encoded)
+                
                 st.session_state.dataset = df_encoded
                 st.session_state.preprocessing_steps.append(step_msg)
+                st.toast(f"🏷️ {encoding_method} applied!", icon="✅")
                 st.markdown("---")
                 st.rerun()
         
@@ -756,8 +798,8 @@ def _render_scaling_options(df):
         return
     
     st.markdown(f"**Numeric columns (excluding target):** {', '.join(numeric_cols)}")
-    
-    scaling_method = st.selectbox(        "Select scaling method",
+    scaling_method = st.selectbox(
+        "Select scaling method",
         ["StandardScaler", "MinMaxScaler", "RobustScaler"],
         help="Choose how to scale numeric features"
     )
@@ -782,15 +824,24 @@ def _render_scaling_options(df):
                 else:
                     scaler = RobustScaler()
                     scaler_description = "Uses median and IQR, robust to outliers"
-                
-                # Apply scaling
+                  # Apply scaling
                 df_scaled[numeric_cols] = scaler.fit_transform(df_scaled[numeric_cols])
-                  # Calculate statistics after scaling
+                
+                # Calculate statistics after scaling
                 scaled_stats = df_scaled[numeric_cols].describe()
+                
+                # Ensure Arrow compatibility before storing
+                from preprocessor import MLPreprocessor
+                if 'preprocessor' not in st.session_state:
+                    st.session_state.preprocessor = MLPreprocessor()
+                df_scaled = st.session_state.preprocessor.ensure_arrow_compatibility(df_scaled)
                 
                 st.session_state.dataset = df_scaled
                 step_msg = f"Applied {scaling_method} to {len(numeric_cols)} numeric features"
                 st.session_state.preprocessing_steps.append(step_msg)
+                
+                st.success(f"✅ {scaling_method} applied to {len(numeric_cols)} features!")
+                st.toast(f"⚖️ Features scaled using {scaling_method}!", icon="✅")
                 
                 # Update summary (no UI success message shown)
                 st.markdown("---")
@@ -809,10 +860,11 @@ def _render_feature_selection_options(df):
         return
     
     feature_cols = [col for col in df.columns if col != st.session_state.target]
-    
     if len(feature_cols) < 2:
         st.info("Need at least 2 features for selection")
-        return    st.markdown(f"**Available features:** {len(feature_cols)} columns")
+        return
+    
+    st.markdown(f"**Available features:** {len(feature_cols)} columns")
     
     selection_method = st.selectbox(
         "Select feature selection method",
@@ -1705,8 +1757,7 @@ def _render_prediction_analysis():
         return
     
     st.markdown("#### Prediction Analysis")
-    
-    # Create prediction comparison table
+      # Create prediction comparison table
     comparison_df = pd.DataFrame({
         'Actual': y_true[:100],  # Show first 100 for performance
         'Predicted': y_pred[:100],
@@ -1730,17 +1781,17 @@ def _render_prediction_analysis():
             stats_df = pd.DataFrame({
                 'Metric': ['Mean Error', 'Mean Absolute Error', 'Max Error', 'Min Error'],
                 'Value': [
-                    comparison_df['Error'].mean(),
-                    comparison_df['Absolute Error'].mean(),
-                    comparison_df['Error'].max(),
-                    comparison_df['Error'].min()
+                    f"{comparison_df['Error'].mean():.4f}",
+                    f"{comparison_df['Absolute Error'].mean():.4f}",
+                    f"{comparison_df['Error'].max():.4f}",
+                    f"{comparison_df['Error'].min():.4f}"
                 ]
             })
         else:
             accuracy = (comparison_df['Correct']).mean()
             stats_df = pd.DataFrame({
                 'Metric': ['Accuracy (Sample)', 'Correct Predictions', 'Total Predictions'],
-                'Value': [f"{accuracy:.3f}", comparison_df['Correct'].sum(), len(comparison_df)]
+                'Value': [f"{accuracy:.3f}", str(comparison_df['Correct'].sum()), str(len(comparison_df))]
             })
         
         st.dataframe(stats_df, use_container_width=True)

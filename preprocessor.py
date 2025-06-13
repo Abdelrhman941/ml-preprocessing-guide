@@ -484,7 +484,7 @@ class MLPreprocessor:
         
         return df_engineered
     
-    def create_binning_features(self, df: pd.DataFrame, binning_config: Dict[str, Dict]) -> pd.DataFrame:
+    def create_binning_features(self, df: pd.DataFrame, binning_config: Dict[str, Dict]) -> Tuple[pd.DataFrame, List[str], List[str]]:
         """
         → Create binned/discretized features from continuous variables.
         
@@ -501,10 +501,12 @@ class MLPreprocessor:
                             }
                         }
         
-        Returns → DataFrame with new binned features
+        Returns → Tuple of (DataFrame with new binned features, success_messages, error_messages)
         """
         df_engineered    = df.copy()
         created_features = []
+        success_messages = []
+        error_messages = []
         
         for feature_name, config in binning_config.items():
             source_col = config.get('column')
@@ -514,32 +516,49 @@ class MLPreprocessor:
             labels     = config.get('labels')
             
             if source_col not in df_engineered.columns:
-                print(f"⚠️ Warning: Column '{source_col}' not found. Skipping {feature_name}")
+                error_messages.append(f"⚠️ Column '{source_col}' not found. Skipping '{feature_name}'")
                 continue
+            # Validate labels if provided
+            if labels:
+                if method in ['equal_width', 'equal_freq']:
+                    expected_labels = bins  # For equal_width/equal_freq, bins parameter = number of intervals = number of labels needed
+                    if len(labels) != expected_labels:
+                        error_messages.append(f"❌ For '{feature_name}': Labels count ({len(labels)}) must be {expected_labels} (same as bins). Provided labels: {labels}")
+                        continue
+                elif method == 'custom' and bin_edges:
+                    expected_labels = len(bin_edges) - 1  # For custom, bin_edges-1 = number of intervals = number of labels needed
+                    if len(labels) != expected_labels:
+                        error_messages.append(f"❌ For '{feature_name}': Labels count ({len(labels)}) must be {expected_labels} (bin_edges-1). Provided: {len(labels)} labels for {len(bin_edges)} bin edges")
+                        continue
             
             try:
                 if method == 'equal_width':
-                    df_engineered[feature_name] = pd.cut(df_engineered[source_col], bins=bins, labels=labels)
+                    binned_col = pd.cut(df_engineered[source_col], bins=bins, labels=labels)
                 elif method == 'equal_freq':
-                    df_engineered[feature_name] = pd.qcut(df_engineered[source_col], q=bins, labels=labels)
+                    binned_col = pd.qcut(df_engineered[source_col], q=bins, labels=labels)
                 elif method == 'custom' and bin_edges:
-                    df_engineered[feature_name] = pd.cut(df_engineered[source_col], bins=bin_edges, labels=labels)
+                    binned_col = pd.cut(df_engineered[source_col], bins=bin_edges, labels=labels)
                 else:
-                    print(f"⚠️ Warning: Invalid binning configuration for '{feature_name}'. Skipping")
+                    error_messages.append(f"⚠️ Invalid binning configuration for '{feature_name}'. Skipping")
                     continue
                 
+                # Convert categorical to string to avoid Arrow serialization issues
+                df_engineered[feature_name] = binned_col.astype(str)
+                
                 created_features.append(feature_name)
-                print(f"✅ Created binned feature '{feature_name}' from '{source_col}' using {method}")
+                success_messages.append(f"✅ Created binned feature '{feature_name}' from '{source_col}' using {method}")
                 
             except Exception as e:
-                print(f"❌ Error creating binned feature '{feature_name}': {str(e)}")
+                error_messages.append(f"❌ Error creating binned feature '{feature_name}': {str(e)}")
                 continue
         
         step_message = f"Binning feature engineering: {len(created_features)} features created"
         self.steps_log.append(step_message)
-        print(f"📝 {step_message}")
         
-        return df_engineered
+        if created_features:
+            success_messages.append(f"📝 {step_message}")
+        
+        return df_engineered, success_messages, error_messages
     # =================== FEATURE SCALING ===================
     
     def scale_features(self,df: pd.DataFrame,columns: Optional[List[str]] = None,method: str = 'standard') -> pd.DataFrame:
@@ -637,4 +656,57 @@ class MLPreprocessor:
         self.feature_names = []
         self.steps_log = []
         self.balancing_info = {}
-        print("✅ Preprocessor state reset")
+        print("✅ Preprocessor state reset")    
+    # Ensure DataFrame is compatible with Arrow serialization for Streamlit display.
+    def ensure_arrow_compatibility(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        → Ensure DataFrame is compatible with Arrow serialization for Streamlit display.
+        
+        Args:
+            df : Input DataFrame
+        
+        Returns → Arrow-compatible DataFrame
+        """
+        df_compatible = df.copy()
+        
+        for col in df_compatible.columns:
+            # Handle categorical columns
+            if df_compatible[col].dtype.name == 'category':
+                df_compatible[col] = df_compatible[col].astype(str)
+            
+            # Handle object columns with mixed types
+            elif df_compatible[col].dtype == 'object':
+                # Convert to string to ensure consistency
+                df_compatible[col] = df_compatible[col].astype(str)
+            
+            # Handle interval columns (from pd.cut)
+            elif str(df_compatible[col].dtype).startswith('interval'):
+                df_compatible[col] = df_compatible[col].astype(str)
+            
+            # Handle nullable integer types
+            elif str(df_compatible[col].dtype).startswith('Int'):
+                df_compatible[col] = df_compatible[col].astype('int64', errors='ignore')
+            
+            # Handle nullable float types
+            elif str(df_compatible[col].dtype).startswith('Float'):
+                df_compatible[col] = df_compatible[col].astype('float64', errors='ignore')
+            
+            # Handle any remaining complex types by converting to string
+            elif df_compatible[col].dtype == 'object' or 'complex' in str(df_compatible[col].dtype):
+                df_compatible[col] = df_compatible[col].astype(str)
+        
+        # Final safety check: ensure no mixed types in any column
+        for col in df_compatible.columns:
+            if df_compatible[col].dtype == 'object':
+                # Check if all values can be converted to the same type
+                sample_values = df_compatible[col].dropna().head(10)
+                if len(sample_values) > 0:
+                    try:
+                        # Try to convert to numeric first
+                        pd.to_numeric(sample_values)
+                        df_compatible[col] = pd.to_numeric(df_compatible[col], errors='coerce')
+                    except (ValueError, TypeError):
+                        # If not numeric, ensure all are strings
+                        df_compatible[col] = df_compatible[col].astype(str)
+        
+        return df_compatible
