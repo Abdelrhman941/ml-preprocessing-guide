@@ -20,8 +20,8 @@ def test_duplicate_detection():
     
     # Test duplicate detection
     df_clean, num_duplicates = detect_and_remove_duplicates(df)
-    print(f"Cleaned data shape: {df_clean.shape}")
-    print(f"Duplicates removed: {num_duplicates}")
+    print(f"Cleaned  data shape: {df_clean.shape}")
+    print(f"Duplicates removed : {num_duplicates}")
     
     assert num_duplicates == 1, f"Expected 1 duplicate, found {num_duplicates}"
     print("✅ Duplicate detection test passed!")
