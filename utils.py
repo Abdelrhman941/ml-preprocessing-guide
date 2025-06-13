@@ -1,13 +1,13 @@
-import pandas as pd
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from sklearn.datasets import load_iris, load_wine, load_breast_cancer, load_diabetes
+from sklearn.model_selection import cross_val_score, learning_curve
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.model_selection import cross_val_score, learning_curve, validation_curve
 from sklearn.metrics import (
-    accuracy_score, f1_score, roc_auc_score, classification_report, 
+    accuracy_score, f1_score, roc_auc_score, 
     confusion_matrix, mean_squared_error, r2_score, mean_absolute_error,
     roc_curve, auc)
 import xgboost as xgb
@@ -15,25 +15,17 @@ import lightgbm as lgb
 import warnings
 warnings.filterwarnings('ignore')
 
-# Try to import SHAP for advanced feature importance
-try:
-    import shap
-    SHAP_AVAILABLE = True
-except ImportError:
-    SHAP_AVAILABLE = False
-
 # Import configuration
 from config import HYPERPARAMETER_GRIDS, MODEL_CONFIG, COLOR_SCHEMES
 
-
+# Load sample datasets for testing and demonstration
 def load_sample_dataset(dataset_name: str):
-    """Load sample datasets for testing and demonstration."""
     datasets = {
-        "Iris": (load_iris, 'classification'),
-        "Wine": (load_wine, 'classification'), 
-        "Breast Cancer": (load_breast_cancer, 'classification'),
-        "Diabetes (Regression)": (load_diabetes, 'regression'),
-        "California Housing (Regression)": (None, 'regression')  # Will be handled separately
+        "Iris (Classification)"           : (load_iris, 'classification'),
+        "Wine (Classification)"           : (load_wine, 'classification'), 
+        "Breast Cancer (Classification)"  : (load_breast_cancer, 'classification'),
+        "Diabetes (Regression)"           : (load_diabetes, 'regression'),
+        "California Housing (Regression)" : (None, 'regression')  # Will be handled separately
     }
     
     if dataset_name not in datasets:
@@ -57,14 +49,12 @@ def load_sample_dataset(dataset_name: str):
         df['target'] = data.target
         return df, task_type
 
-
+# Get hyperparameter options for each model
 def get_model_params(model_name: str):
-    """Get hyperparameter options for each model."""
     return HYPERPARAMETER_GRIDS.get(model_name, {})
 
-
+# Create model instance with given parameters
 def create_model(model_name: str, params: dict, task_type: str = 'classification'):
-    """Create model instance with given parameters."""
     random_state = MODEL_CONFIG["default_random_state"]
     
     if model_name == "Random Forest":
@@ -87,9 +77,8 @@ def create_model(model_name: str, params: dict, task_type: str = 'classification
     
     raise ValueError(f"Model '{model_name}' not supported")
 
-
+# Evaluate model using cross-validation
 def evaluate_model(model, X, y, task_type: str = 'classification', metric: str = 'accuracy'):
-    """Evaluate model using cross-validation."""
     try:
         if task_type == 'classification':
             if metric == 'accuracy':
@@ -115,9 +104,8 @@ def evaluate_model(model, X, y, task_type: str = 'classification', metric: str =
         st.error(f"Error evaluating model: {e}")
         return 0.0, 0.0
 
-
+# Create interactive confusion matrix
 def plot_confusion_matrix(y_true, y_pred, labels=None):
-    """Create interactive confusion matrix."""
     cm = confusion_matrix(y_true, y_pred)
     
     if labels is None:
@@ -140,9 +128,8 @@ def plot_confusion_matrix(y_true, y_pred, labels=None):
     
     return fig
 
-
+# Create feature importance plot
 def plot_feature_importance(model, feature_names, top_n: int = 15):
-    """Create feature importance plot."""
     if hasattr(model, 'feature_importances_'):
         importances = model.feature_importances_
     elif hasattr(model, 'coef_'):
@@ -171,9 +158,8 @@ def plot_feature_importance(model, feature_names, top_n: int = 15):
     
     return fig
 
-
+# Plot ROC curve for classification models
 def plot_roc_curve(model, X, y):
-    """Plot ROC curve for classification models."""
     try:
         y_pred_proba = model.predict_proba(X)[:, 1]
         fpr, tpr, _ = roc_curve(y, y_pred_proba)
@@ -208,9 +194,8 @@ def plot_roc_curve(model, X, y):
         st.error(f"Error creating ROC curve: {e}")
         return None
 
-
+# Plot actual vs predicted values for regression
 def plot_regression_results(y_true, y_pred):
-    """Plot actual vs predicted values for regression."""
     fig = go.Figure()
     
     # Scatter plot
@@ -234,18 +219,17 @@ def plot_regression_results(y_true, y_pred):
     ))
     
     fig.update_layout(
-        title='Actual vs Predicted Values',
-        xaxis_title='Actual Values',
-        yaxis_title='Predicted Values',
-        height=400,
-        showlegend=True
+        title       = 'Actual vs Predicted Values',
+        xaxis_title = 'Actual Values',
+        yaxis_title = 'Predicted Values',
+        height      = 400,
+        showlegend  = True
     )
     
     return fig
 
-
+# Add message to training logs
 def add_log_message(message: str):
-    """Add message to training logs."""
     if 'training_logs' not in st.session_state:
         st.session_state.training_logs = []
     
@@ -257,9 +241,8 @@ def add_log_message(message: str):
     if len(st.session_state.training_logs) > 100:
         st.session_state.training_logs = st.session_state.training_logs[-100:]
 
-
+# Get comprehensive model performance metrics
 def get_model_metrics_summary(model, X_test, y_test, task_type: str):
-    """Get comprehensive model performance metrics."""
     y_pred = model.predict(X_test)
     
     if task_type == 'classification':
@@ -278,16 +261,15 @@ def get_model_metrics_summary(model, X_test, y_test, task_type: str):
     else:
         metrics = {
             'R² Score': r2_score(y_test, y_pred),
-            'MSE': mean_squared_error(y_test, y_pred),
-            'MAE': mean_absolute_error(y_test, y_pred),
-            'RMSE': np.sqrt(mean_squared_error(y_test, y_pred))
+            'MSE'     : mean_squared_error(y_test, y_pred),
+            'MAE'     : mean_absolute_error(y_test, y_pred),
+            'RMSE'    : np.sqrt(mean_squared_error(y_test, y_pred))
         }
     
     return metrics
 
-
+# Create a formatted display of model metrics
 def create_metrics_display(metrics: dict):
-    """Create a formatted display of model metrics."""
     cols = st.columns(len(metrics))
     
     for i, (metric_name, value) in enumerate(metrics.items()):
@@ -304,45 +286,41 @@ def create_metrics_display(metrics: dict):
                 </div>
             """, unsafe_allow_html=True)
 
-
 def detect_and_remove_duplicates(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     """
     Detect and remove duplicate rows from the dataset.
     
     Args:
         df: Input DataFrame
-        
-    Returns:
-        Tuple of (cleaned_df, num_duplicates_removed)
+    
+    Returns → Tuple of (cleaned_df, num_duplicates_removed)
     """
     initial_rows = len(df)
     
     # Check for duplicates
     duplicates_mask = df.duplicated()
-    num_duplicates = duplicates_mask.sum()
+    num_duplicates  = duplicates_mask.sum()
     
     if num_duplicates > 0:
         # Remove duplicates
-        df_cleaned = df.drop_duplicates()
+        df_cleaned    = df.drop_duplicates()
         removed_count = initial_rows - len(df_cleaned)
         return df_cleaned, removed_count
     else:
         return df, 0
-
 
 def plot_learning_curves(model, X, y, task_type: str = 'classification', cv: int = 5):
     """
     Generate learning curves for model performance evaluation.
     
     Args:
-        model: Trained model
-        X: Feature matrix
-        y: Target vector
+        model    : Trained model
+        X        : Feature matrix
+        y        : Target vector
         task_type: 'classification' or 'regression'
-        cv: Number of cross-validation folds
-        
-    Returns:
-        Plotly figure with learning curves
+        cv       : Number of cross-validation folds
+    
+    Returns → Plotly figure with learning curves
     """
     try:
         # Define scoring metric based on task type
@@ -360,9 +338,9 @@ def plot_learning_curves(model, X, y, task_type: str = 'classification', cv: int
         
         # Calculate means and standard deviations
         train_mean = train_scores.mean(axis=1)
-        train_std = train_scores.std(axis=1)
-        val_mean = val_scores.mean(axis=1)
-        val_std = val_scores.std(axis=1)
+        train_std  = train_scores.std(axis=1)
+        val_mean   = val_scores.mean(axis=1)
+        val_std    = val_scores.std(axis=1)
         
         # For regression, convert negative MSE to positive
         if task_type == 'regression':
@@ -431,26 +409,24 @@ def plot_learning_curves(model, X, y, task_type: str = 'classification', cv: int
         st.error(f"Error generating learning curves: {e}")
         return None
 
-
 def create_enhanced_preprocessing_summary(steps: list, dataset_info: dict):
     """
-    Create an enhanced preprocessing summary with detailed information.
+    → Create an enhanced preprocessing summary with detailed information.
     
     Args:
-        steps: List of preprocessing steps
+        steps       : List of preprocessing steps
         dataset_info: Dictionary with dataset information
-        
-    Returns:
-        Formatted summary for display
+    
+    Returns → Formatted summary for display
     """
     summary = {
         'preprocessing_steps': steps,
-        'dataset_shape': dataset_info.get('shape', 'Unknown'),
-        'missing_values': dataset_info.get('missing_values', 0),
-        'duplicates_removed': dataset_info.get('duplicates_removed', 0),
+        'dataset_shape'      : dataset_info.get('shape', 'Unknown'),
+        'missing_values'     : dataset_info.get('missing_values', 0),
+        'duplicates_removed' : dataset_info.get('duplicates_removed', 0),
         'categorical_encoded': dataset_info.get('categorical_encoded', []),
-        'features_scaled': dataset_info.get('features_scaled', []),
-        'features_selected': dataset_info.get('features_selected', 'All')
+        'features_scaled'    : dataset_info.get('features_scaled', []),
+        'features_selected'  : dataset_info.get('features_selected', 'All')
     }
     
     return summary
