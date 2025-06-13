@@ -1,23 +1,22 @@
-import streamlit as st
+import json
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import json
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.preprocessing import LabelEncoder
 
-from gui.navigation import create_navigation_buttons, display_dataset_overview
-from gui.utils import (
+import streamlit as st
+from preprocessor import MLPreprocessor
+from navigation import create_navigation_buttons, display_dataset_overview
+from utils import (
     get_model_params, create_model, evaluate_model, add_log_message,
     plot_confusion_matrix, plot_feature_importance, plot_roc_curve,
     plot_regression_results, get_model_metrics_summary, create_metrics_display,
     detect_and_remove_duplicates, plot_learning_curves
 )
-from gui.preprocessor import MLPreprocessor
 
-
+# ------ Render the home page with welcome information ------
 def render_home_page():
-    """Render the home page with welcome information."""
     st.markdown("<h1 class='main-header'>🚀 Machine Learning Studio</h1>", unsafe_allow_html=True)
     
     col1, col2 = st.columns([2, 1])
@@ -52,9 +51,8 @@ def render_home_page():
     
     create_navigation_buttons()
 
-
+# ------ Render the data exploration page with comprehensive data analysis ------
 def render_data_exploration_page():
-    """Render the data exploration page with comprehensive data analysis."""
     st.markdown("<h1 class='main-header'>📊 Data Exploration</h1>", unsafe_allow_html=True)
     
     if st.session_state.dataset is None:
@@ -87,11 +85,11 @@ def render_data_exploration_page():
     with info_col1:
         st.markdown("#### Column Details")
         dtypes_df = pd.DataFrame({
-            'Column': df.columns,
-            'Type': df.dtypes.astype(str),
+            'Column'        : df.columns,
+            'Type'          : df.dtypes.astype(str),
             'Non-Null Count': df.count(),
-            'Null Count': df.isna().sum(),
-            'Unique Values': [df[col].nunique() for col in df.columns]
+            'Null Count'    : df.isna().sum(),
+            'Unique Values' : [df[col].nunique() for col in df.columns]
         })
         st.dataframe(dtypes_df, use_container_width=True)
     
@@ -127,9 +125,8 @@ def render_data_exploration_page():
     
     create_navigation_buttons()
 
-
+# ------ Render distribution plots for numeric and categorical variables ------
 def _render_distribution_plots(df):
-    """Render distribution plots for numeric and categorical variables."""
     col1, col2 = st.columns(2)
     
     with col1:
@@ -170,9 +167,8 @@ def _render_distribution_plots(df):
         else:
             st.info("No categorical columns available")
 
-
+# ------ Render correlation analysis for numeric variables ------
 def _render_correlation_analysis(df):
-    """Render correlation analysis for numeric variables."""
     numeric_df = df.select_dtypes(include=['number'])
     if numeric_df.shape[1] < 2:
         st.info("Need at least 2 numeric columns for correlation analysis")
@@ -210,9 +206,8 @@ def _render_correlation_analysis(df):
     else:
         st.info("No high correlation pairs found")
 
-
+# ------ Render missing values analysis and visualization ------
 def _render_missing_values_analysis(df):
-    """Render missing values analysis and visualization."""
     missing_data = df.isna().sum()
     
     if missing_data.sum() == 0:
@@ -247,9 +242,8 @@ def _render_missing_values_analysis(df):
             fig.update_layout(height=400)
             st.plotly_chart(fig, use_container_width=True)
 
-
+# ------ Render target variable analysis ------
 def _render_target_analysis(df):
-    """Render target variable analysis."""
     if not st.session_state.target:
         st.markdown("<div class='info-box'>", unsafe_allow_html=True)
         st.info("Please select a target variable in the Quick Settings above.")
@@ -263,9 +257,8 @@ def _render_target_analysis(df):
     else:
         _render_regression_target_analysis(df, target_col)
 
-
+# ------ Render analysis for classification target variable ------
 def _render_classification_target_analysis(df, target_col):
-    """Render analysis for classification target variable."""
     target_counts = df[target_col].value_counts()
     
     col1, col2 = st.columns(2)
@@ -303,9 +296,8 @@ def _render_classification_target_analysis(df, target_col):
         # Class counts table
         st.dataframe(target_counts.to_frame('Count'), use_container_width=True)
 
-
+# ------ Render analysis for regression target variable ------
 def _render_regression_target_analysis(df, target_col):
-    """Render analysis for regression target variable."""
     col1, col2 = st.columns(2)
     
     with col1:
@@ -334,9 +326,8 @@ def _render_regression_target_analysis(df, target_col):
         })
         st.dataframe(stats_df, use_container_width=True)
 
-
+# ------ Render the preprocessing page with data cleaning options ------
 def render_preprocessing_page():
-    """Render the preprocessing page with data cleaning options."""
     st.markdown("<h1 class='main-header'>🔧 Preprocessing</h1>", unsafe_allow_html=True)
     
     if st.session_state.dataset is None:
@@ -347,7 +338,7 @@ def render_preprocessing_page():
         return
     
     df = st.session_state.dataset.copy()
-      # Initialize preprocessor if not exists
+    # Initialize preprocessor if not exists
     if 'preprocessor' not in st.session_state:
         st.session_state.preprocessor = MLPreprocessor()
     preprocessor = st.session_state.preprocessor
@@ -390,9 +381,8 @@ def render_preprocessing_page():
     
     create_navigation_buttons()
 
-
+# ------ Render missing values handling options ------
 def _render_missing_values_handling(df, preprocessor):
-    """Render missing values handling options."""
     st.markdown("#### Handle Missing Values")
     
     missing_cols = df.columns[df.isna().any()].tolist()
@@ -425,9 +415,9 @@ def _render_missing_values_handling(df, preprocessor):
                 else:
                     # Use the preprocessor class
                     strategy_map = {
-                        'Mean imputation': 'mean',
+                        'Mean imputation'  : 'mean',
                         'Median imputation': 'median', 
-                        'Mode imputation': 'mode'
+                        'Mode imputation'  : 'mode'
                     }
                     processed_df = preprocessor.handle_missing_data(
                         df, 
@@ -442,18 +432,17 @@ def _render_missing_values_handling(df, preprocessor):
         except Exception as e:
             st.error(f"Error processing missing values: {e}")
 
-
+# ------ Render data type conversion options ------
 def _render_data_type_conversion(df, preprocessor):
-    """Render data type conversion options."""
     st.markdown("#### Data Type Conversion & Optimization")
     
     st.markdown("**Current Data Types:**")
     
     # Display current data types
     dtype_df = pd.DataFrame({
-        'Column': df.columns,
-        'Current Type': df.dtypes.astype(str),
-        'Memory Usage (KB)': [df[col].memory_usage(deep=True) / 1024 for col in df.columns]
+        'Column'            : df.columns,
+        'Current Type'      : df.dtypes.astype(str),
+        'Memory Usage (KB)' : [df[col].memory_usage(deep=True) / 1024 for col in df.columns]
     })
     st.dataframe(dtype_df, use_container_width=True)
     
@@ -561,9 +550,8 @@ def _render_data_type_conversion(df, preprocessor):
         except Exception as e:
             st.error(f"Error converting data types: {e}")
 
-
+# ------ Render feature engineering options ------
 def _render_feature_engineering(df, preprocessor):
-    """Render feature engineering options."""
     st.markdown("#### Feature Engineering")
     
     engineering_method = st.selectbox(
@@ -731,9 +719,8 @@ def _render_feature_engineering(df, preprocessor):
             except Exception as e:
                 st.error(f"Error creating binned feature: {e}")
 
-
+# ------ Render categorical encoding options ------
 def _render_encoding_options(df):
-    """Render categorical encoding options."""
     st.markdown("#### Categorical Encoding")
     
     categorical_cols = df.select_dtypes(include=['object', 'category']).columns.tolist()
@@ -780,9 +767,8 @@ def _render_encoding_options(df):
         except Exception as e:
             st.error(f"Error encoding categorical variables: {e}")
 
-
+# ------ Render feature scaling options ------
 def _render_scaling_options(df):
-    """Render feature scaling options."""
     st.markdown("#### Feature Scaling")
     
     numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
@@ -824,7 +810,7 @@ def _render_scaling_options(df):
                 st.session_state.dataset = df_scaled
                 step_msg = f"Applied {scaling_method} to {len(numeric_cols)} numeric features"
                 st.session_state.preprocessing_steps.append(step_msg)
-                  # Enhanced confirmation message with detailed column information
+                # Enhanced confirmation message with detailed column information
                 st.markdown("<div class='success-box'>", unsafe_allow_html=True)
                 st.success(f"✅ Feature Scaling Completed Successfully!")
                 st.markdown(f"""
@@ -842,9 +828,8 @@ def _render_scaling_options(df):
         except Exception as e:
             st.error(f"Error scaling features: {e}")
 
-
+# ------ Render feature selection options ------
 def _render_feature_selection_options(df):
-    """Render feature selection options."""
     st.markdown("#### Feature Selection")
     
     if not st.session_state.target:
@@ -878,7 +863,7 @@ def _render_feature_selection_options(df):
             
             step_msg = f"Manual feature selection: {len(selected_features)} out of {original_features} features"
             st.session_state.preprocessing_steps.append(step_msg)
-              # Enhanced confirmation message with detailed column information
+            # Enhanced confirmation message with detailed column information
             st.markdown("<div class='success-box'>", unsafe_allow_html=True)
             st.success(f"✅ Feature Selection Applied Successfully!")
             st.markdown(f"""
@@ -914,7 +899,7 @@ def _render_feature_selection_options(df):
                     st.session_state.dataset = df_selected
                     step_msg = f"Correlation filtering: removed {len(to_drop)} highly correlated features (threshold={threshold})"
                     st.session_state.preprocessing_steps.append(step_msg)
-                      # Enhanced confirmation message with detailed column information
+                    # Enhanced confirmation message with detailed column information
                     st.markdown("<div class='success-box'>", unsafe_allow_html=True)
                     st.success(f"✅ Feature Selection Applied Successfully!")
                     st.markdown(f"""
@@ -936,9 +921,8 @@ def _render_feature_selection_options(df):
             except Exception as e:
                 st.error(f"Error in correlation filtering: {e}")
 
-
+# ------ Render preprocessing summary and reset option ------
 def _render_preprocessing_summary():
-    """Render preprocessing steps summary."""
     st.markdown("#### Preprocessing Summary")
     
     if not st.session_state.preprocessing_steps:
@@ -968,9 +952,8 @@ def _render_preprocessing_summary():
         st.success("Preprocessing steps reset")
         st.rerun()
 
-
+# ------ Render the model training page ------
 def render_training_page():
-    """Render the model training page."""
     st.markdown("<h1 class='main-header'>🧠 Model Training</h1>", unsafe_allow_html=True)
     
     if st.session_state.dataset is None:
@@ -1064,12 +1047,9 @@ def render_training_page():
     
     create_navigation_buttons()
 
-
+# ------ Execute the model training process ------
 def _execute_training(df):
-    """Execute the model training process."""
     try:
-        from gui.utils import detect_and_remove_duplicates
-        
         add_log_message("🚀 Starting training process...")
         
         # Check for and remove duplicates before training
@@ -1210,9 +1190,8 @@ def _execute_training(df):
         add_log_message(f"❌ Training failed: {str(e)}")
         st.error(f"Training failed: {e}")
 
-
+# ------ Render the model evaluation page ------
 def render_evaluation_page():
-    """Render the model evaluation page."""
     st.markdown("<h1 class='main-header'>📈 Model Evaluation</h1>", unsafe_allow_html=True)
     
     if st.session_state.best_model is None:
@@ -1287,17 +1266,15 @@ def render_evaluation_page():
     
     create_navigation_buttons()
 
-
+# ------ Render prediction analysis tab ------
 def _render_performance_visualizations():
-    """Render performance visualizations based on task type."""
     if st.session_state.task_type == 'classification':
         _render_classification_performance()
     else:
         _render_regression_performance()
 
-
+# ------ Render classification performance visualizations ------
 def _render_classification_performance():
-    """Render classification performance visualizations."""
     if st.session_state.y_test is None or 'training_results' not in st.session_state:
         st.info("No test results available")
         return
@@ -1328,9 +1305,8 @@ def _render_classification_performance():
         else:
             st.info("ROC curve only available for binary classification")
 
-
+# ------ Render regression performance visualizations ------
 def _render_regression_performance():
-    """Render regression performance visualizations."""
     if st.session_state.y_test is None or 'training_results' not in st.session_state:
         st.info("No test results available")
         return
@@ -1363,11 +1339,8 @@ def _render_regression_performance():
         fig_residuals.add_hline(y=0, line_dash="dash", line_color="red")
         st.plotly_chart(fig_residuals, use_container_width=True)
 
-
+# ------ Render learning curves analysis ------
 def _render_learning_curves_analysis():
-    """Render learning curves analysis."""
-    from gui.utils import plot_learning_curves
-    
     if st.session_state.best_model is None or st.session_state.X_train is None:
         st.info("No trained model available for learning curve analysis")
         return
@@ -1417,10 +1390,8 @@ def _render_learning_curves_analysis():
                     except Exception as e:
                         st.error(f"Error generating learning curves: {e}")
 
-
-
+# ------ Render feature importance analysis tab ------
 def _render_feature_importance_analysis():
-    """Render feature importance analysis tab."""
     if st.session_state.best_model is None or st.session_state.X_train is None:
         st.info("No trained model available for feature importance analysis")
         return
@@ -1449,9 +1420,8 @@ def _render_feature_importance_analysis():
     else:
         st.info("This model doesn't provide built-in feature importance scores")
 
-
+# ------ Render prediction analysis tab ------
 def _render_prediction_analysis():
-    """Render prediction analysis tab."""
     if st.session_state.y_test is None or 'training_results' not in st.session_state:
         st.info("No test predictions available")
         return
@@ -1504,19 +1474,18 @@ def _render_prediction_analysis():
         
         st.dataframe(stats_df, use_container_width=True)
 
-
+# ------ Export trained model ------
 def _export_model():
-    """Export trained model."""
     try:
         import pickle
         import io
         
         model_data = {
-            'model': st.session_state.best_model,
-            'params': st.session_state.best_params,
-            'feature_names': list(st.session_state.X_train.columns) if st.session_state.X_train is not None else [],
-            'task_type': st.session_state.task_type,
-            'target_column': st.session_state.target
+            'model'         : st.session_state.best_model,
+            'params'        : st.session_state.best_params,
+            'feature_names' : list(st.session_state.X_train.columns) if st.session_state.X_train is not None else [],
+            'task_type'     : st.session_state.task_type,
+            'target_column' : st.session_state.target
         }
         
         # Serialize model
@@ -1525,10 +1494,10 @@ def _export_model():
         buffer.seek(0)
         
         st.download_button(
-            label="Download model.pkl",
-            data=buffer.getvalue(),
-            file_name=f"{st.session_state.model_name}_model.pkl",
-            mime="application/octet-stream"
+            label     = "Download model.pkl",
+            data      = buffer.getvalue(),
+            file_name = f"{st.session_state.model_name}_model.pkl",
+            mime      = "application/octet-stream"
         )
         
         st.success("✅ Model exported successfully!")
@@ -1536,9 +1505,8 @@ def _export_model():
     except Exception as e:
         st.error(f"Error exporting model: {e}")
 
-
+# ------ Export results to JSON ------
 def _export_results():
-    """Export training results and metrics."""
     try:
         if 'training_results' not in st.session_state:
             st.warning("No results to export")
@@ -1548,22 +1516,22 @@ def _export_results():
         
         # Create results summary
         results_summary = {
-            'model_name': results.get('model_name', ''),
-            'task_type': st.session_state.task_type,
-            'best_parameters': results.get('best_params', {}),
-            'performance_metrics': results.get('metrics', {}),
-            'preprocessing_steps': st.session_state.preprocessing_steps,
-            'training_logs': st.session_state.training_logs[-20:]  # Last 20 logs
+            'model_name'          : results.get('model_name', ''),
+            'task_type'           : st.session_state.task_type,
+            'best_parameters'     : results.get('best_params', {}),
+            'performance_metrics' : results.get('metrics', {}),
+            'preprocessing_steps' : st.session_state.preprocessing_steps,
+            'training_logs'       : st.session_state.training_logs[-20:]  # Last 20 logs
         }
         
         # Convert to JSON
         results_json = json.dumps(results_summary, indent=2, default=str)
         
         st.download_button(
-            label="Download results.json",
-            data=results_json,
-            file_name="training_results.json",
-            mime="application/json"
+            label     = "Download results.json",
+            data      = results_json,
+            file_name = "training_results.json",
+            mime      = "application/json"
         )
         
         st.success("✅ Results exported successfully!")
