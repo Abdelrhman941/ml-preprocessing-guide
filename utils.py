@@ -4,7 +4,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from sklearn.datasets import load_iris, load_wine, load_breast_cancer, load_diabetes
-from sklearn.model_selection import cross_val_score, learning_curve, validation_curve
+from sklearn.model_selection import cross_val_score, learning_curve
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import (
     accuracy_score, f1_score, roc_auc_score, 
@@ -422,8 +422,20 @@ def plot_roc_curve_multiclass(model, X_test, y_test, class_names=None):
         st.error(f"Error creating ROC curve: {e}")
         return None
 
-# Create a formatted display of model metrics with color coding
+# Create a formatted display of model metrics with color coding and explanations
 def create_metrics_display(metrics: dict):
+    """
+    Display model metrics with color-coded performance indicators and explanations
+    """
+    # Color legend
+    st.markdown("""
+    <div style="text-align: center; margin-bottom: 1rem; padding: 0.5rem; border-radius: 0.25rem; background-color: rgba(255,255,255,0.05);">
+        <span style="color: green; font-weight: bold;">🟢 Excellent ≥ 0.8</span> &nbsp;&nbsp;
+        <span style="color: orange; font-weight: bold;">🟡 Moderate ≥ 0.6</span> &nbsp;&nbsp;
+        <span style="color: red; font-weight: bold;">🔴 Poor < 0.6</span>
+    </div>
+    """, unsafe_allow_html=True)
+    
     cols = st.columns(len(metrics))
     
     for i, (metric_name, value) in enumerate(metrics.items()):
@@ -434,24 +446,29 @@ def create_metrics_display(metrics: dict):
                 # Color coding based on metric value
                 if metric_name.lower() in ['accuracy', 'f1 score', 'precision', 'recall', 'roc auc', 'r² score']:
                     # Higher is better metrics
-                    if value > 0.8:
+                    if value >= 0.8:
                         score_color = "green"
-                        performance = "Excellent"
-                    elif value > 0.6:
+                        performance = "🟢 Excellent"
+                        emoji = "🟢"
+                    elif value >= 0.6:
                         score_color = "orange"
-                        performance = "Good"
+                        performance = "🟡 Moderate"
+                        emoji = "🟡"
                     else:
                         score_color = "red"
-                        performance = "Poor"
+                        performance = "🔴 Poor"
+                        emoji = "🔴"
                 elif metric_name.lower() in ['mse', 'mae', 'rmse']:
-                    # Lower is better metrics - relative assessment
-                    score_color = "blue"  # Neutral for regression metrics
-                    performance = "Metric"
+                    # Lower is better metrics - neutral display for regression
+                    score_color = "blue"
+                    performance = "📊 Metric"
+                    emoji = "📊"
                 else:
                     score_color = "blue"
-                    performance = "Metric"
+                    performance = "📊 Metric"
+                    emoji = "📊"
                 
-                # Enhanced metric display with color
+                # Enhanced metric display with color and emoji
                 st.markdown(f"""
                     <div style="
                         padding: 1rem;
@@ -460,6 +477,7 @@ def create_metrics_display(metrics: dict):
                         background-color: rgba(255,255,255,0.05);
                         text-align: center;
                         margin-bottom: 0.5rem;
+                        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
                     ">
                         <div style="
                             font-size: 2rem;
@@ -471,6 +489,7 @@ def create_metrics_display(metrics: dict):
                             font-size: 0.9rem;
                             color: #666;
                             margin-bottom: 0.25rem;
+                            font-weight: 500;
                         ">{metric_name}</div>
                         <div style="
                             font-size: 0.8rem;
@@ -607,108 +626,6 @@ def plot_learning_curves(model, X, y, task_type: str = 'classification', cv: int
         st.error(f"Error generating learning curves: {e}")
         return None
 
-def plot_validation_curve(model, X, y, param_name, param_range, task_type='classification', cv=5):
-    """
-    Generate validation curves for hyperparameter tuning visualization.
-    
-    Args:
-        model: Model instance
-        X: Feature matrix
-        y: Target vector
-        param_name: Name of parameter to vary
-        param_range: Range of parameter values to test
-        task_type: 'classification' or 'regression'
-        cv: Number of cross-validation folds
-    
-    Returns:
-        Plotly figure with validation curves
-    """
-    try:
-        # Define scoring metric based on task type
-        scoring = 'accuracy' if task_type == 'classification' else 'neg_mean_squared_error'
-        
-        # Generate validation curve data
-        train_scores, val_scores = validation_curve(
-            model, X, y, 
-            param_name=param_name,
-            param_range=param_range,
-            cv=cv, 
-            scoring=scoring,
-            n_jobs=-1
-        )
-        
-        # Calculate means and standard deviations
-        train_mean = train_scores.mean(axis=1)
-        train_std = train_scores.std(axis=1)
-        val_mean = val_scores.mean(axis=1)
-        val_std = val_scores.std(axis=1)
-        
-        # For regression, convert negative MSE to positive
-        if task_type == 'regression':
-            train_mean = -train_mean
-            val_mean = -val_mean
-        
-        # Create the plot
-        fig = go.Figure()
-        
-        # Training scores
-        fig.add_trace(go.Scatter(
-            x=param_range,
-            y=train_mean,
-            mode='lines+markers',
-            name='Training Score',
-            line=dict(color=COLOR_SCHEMES['primary'], width=2),
-            marker=dict(size=8)
-        ))
-        
-        # Training score confidence interval
-        fig.add_trace(go.Scatter(
-            x=list(param_range) + list(param_range[::-1]),
-            y=list(train_mean + train_std) + list((train_mean - train_std)[::-1]),
-            fill='toself',
-            fillcolor=f"rgba(91, 192, 190, 0.2)",
-            line=dict(color='rgba(255,255,255,0)'),
-            showlegend=False,
-            name='Training ±1 std'
-        ))
-        
-        # Validation scores
-        fig.add_trace(go.Scatter(
-            x=param_range,
-            y=val_mean,
-            mode='lines+markers',
-            name='Validation Score',
-            line=dict(color=COLOR_SCHEMES['secondary'], width=2),
-            marker=dict(size=8)
-        ))
-        
-        # Validation score confidence interval
-        fig.add_trace(go.Scatter(
-            x=list(param_range) + list(param_range[::-1]),
-            y=list(val_mean + val_std) + list((val_mean - val_std)[::-1]),
-            fill='toself',
-            fillcolor=f"rgba(58, 80, 107, 0.2)",
-            line=dict(color='rgba(255,255,255,0)'),
-            showlegend=False,
-            name='Validation ±1 std'
-        ))
-        
-        # Update layout
-        metric_name = 'Accuracy' if task_type == 'classification' else 'Mean Squared Error'
-        fig.update_layout(
-            title=f'Validation Curve - {param_name}',
-            xaxis_title=param_name,
-            yaxis_title=metric_name,
-            height=500,
-            showlegend=True
-        )
-        
-        return fig
-        
-    except Exception as e:
-        st.error(f"Error generating validation curve: {e}")
-        return None
-
 # Create an enhanced preprocessing summary with detailed information.
 def create_enhanced_preprocessing_summary(steps: list, dataset_info: dict):
     """
@@ -731,3 +648,65 @@ def create_enhanced_preprocessing_summary(steps: list, dataset_info: dict):
     }
     
     return summary
+
+def create_metrics_explanations():
+    """
+    Display metric explanations in expandable sections
+    """
+    st.markdown("---")
+    st.markdown("### 📊 Understanding Your Metrics")
+    
+    explanation_cols = st.columns(2)
+    
+    with explanation_cols[0]:
+        with st.expander("📊 What does Accuracy mean?"):
+            st.info("""
+            **Accuracy**: Proportion of correctly classified samples over all samples.
+            
+            Formula: (True Positives + True Negatives) / Total Samples
+            
+            - **Best for**: Balanced datasets
+            - **Range**: 0.0 to 1.0 (higher is better)
+            """)
+        
+        with st.expander("🎯 What does Precision mean?"):
+            st.info("""
+            **Precision**: Of all positive predictions, how many were actually correct?
+            
+            Formula: True Positives / (True Positives + False Positives)
+            
+            - **Best for**: When false positives are costly
+            - **Range**: 0.0 to 1.0 (higher is better)
+            """)
+    
+    with explanation_cols[1]:
+        with st.expander("🔍 What does Recall mean?"):
+            st.info("""
+            **Recall**: Of all actual positive cases, how many did we correctly identify?
+            
+            Formula: True Positives / (True Positives + False Negatives)
+            
+            - **Best for**: When false negatives are costly
+            - **Range**: 0.0 to 1.0 (higher is better)
+            """)
+        
+        with st.expander("⚖️ What does F1 Score mean?"):
+            st.info("""
+            **F1 Score**: Harmonic mean of Precision and Recall.
+            
+            Formula: 2 × (Precision × Recall) / (Precision + Recall)
+            
+            - **Best for**: When you need balance between precision and recall
+            - **Range**: 0.0 to 1.0 (higher is better)
+            """)
+    
+    with st.expander("📈 What does ROC AUC mean?"):
+        st.info("""
+        **ROC AUC**: Area Under the Receiver Operating Characteristic Curve.
+        
+        Measures the model's ability to distinguish between classes.
+        
+        - **0.5**: Random guessing
+        - **1.0**: Perfect classifier
+        - **Best for**: Binary classification problems
+        """)

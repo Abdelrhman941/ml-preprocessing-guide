@@ -3,7 +3,6 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from scipy import stats
 from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSearchCV
 from sklearn.preprocessing import LabelEncoder
 
@@ -11,12 +10,10 @@ import streamlit as st
 from preprocessor import MLPreprocessor
 from navigation import create_navigation_buttons, display_dataset_overview
 from utils import (
-    get_model_params, create_model, evaluate_model, add_log_message,
-    plot_confusion_matrix, plot_feature_importance, plot_roc_curve,
-    plot_regression_results, get_model_metrics_summary, create_metrics_display,
+    get_model_params, create_model, evaluate_model, add_log_message, plot_feature_importance,
+    plot_regression_results, get_model_metrics_summary, create_metrics_display, create_metrics_explanations,
     detect_and_remove_duplicates, plot_learning_curves, detect_task_type,
-    get_classification_report, plot_confusion_matrix_enhanced, plot_roc_curve_multiclass,
-    plot_validation_curve
+    get_classification_report, plot_confusion_matrix_enhanced, plot_roc_curve_multiclass
 )
 
 # ------ Render the home page with welcome information ------
@@ -116,8 +113,41 @@ def render_home_page():
             st.metric("Columns", len(df.columns))
             if st.session_state.target:
                 st.metric("Target", st.session_state.target)
-        
         st.markdown("</div>", unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # Quick Actions and Tips
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("💡 Quick Tips")
+    
+    tip_cols = st.columns(3)
+    
+    with tip_cols[0]:
+        st.markdown("""
+        **📊 Data Quality**
+        - Upload clean, well-structured CSV files
+        - Ensure consistent data types
+        - Handle missing values appropriately
+        """)
+    
+    with tip_cols[1]:
+        st.markdown("""
+        **🎯 Target Selection**
+        - Choose meaningful target variables
+        - Verify classification vs regression tasks
+        - Balance your dataset if needed
+        """)
+    
+    with tip_cols[2]:
+        st.markdown("""
+        **🚀 Model Performance**
+        - Try different algorithms
+        - Use hyperparameter tuning
+        - Validate with cross-validation
+        """)
+    
+    st.markdown("</div>", unsafe_allow_html=True)
     
     st.markdown("---")
     create_navigation_buttons()
@@ -128,24 +158,27 @@ def render_data_exploration_page():
     
     if st.session_state.dataset is None:
         st.markdown("<div class='warning-box'>", unsafe_allow_html=True)
-        st.warning("Please load a dataset first using the Quick Settings above.")
+        st.warning("⚠️ Please load a dataset first using the Quick Settings above.")
         st.markdown("</div>", unsafe_allow_html=True)
         create_navigation_buttons()
         return
     
-    df = st.session_state.dataset
-    
-    # Dataset overview
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Dataset Overview")
-    display_dataset_overview(df)
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    # Data preview
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Data Preview")
-    st.dataframe(df.head(10), use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+    with st.spinner("⏳ Loading dataset analysis..."):
+        df = st.session_state.dataset
+        
+        # Dataset overview
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📋 Dataset Overview")
+        display_dataset_overview(df)
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        # Data preview
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("👀 Data Preview")
+        st.dataframe(df.head(10), use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     
     # Data types and info
     st.markdown("<div class='card'>", unsafe_allow_html=True)
@@ -403,24 +436,23 @@ def render_preprocessing_page():
     
     if st.session_state.dataset is None:
         st.markdown("<div class='warning-box'>", unsafe_allow_html=True)
-        st.warning("Please load a dataset first.")
+        st.warning("⚠️ Please load a dataset first.")
         st.markdown("</div>", unsafe_allow_html=True)
         create_navigation_buttons()
         return
     
-    df = st.session_state.dataset.copy()
-    # Initialize preprocessor if not exists
-    if 'preprocessor' not in st.session_state:
-        st.session_state.preprocessor = MLPreprocessor()
-    preprocessor = st.session_state.preprocessor
-    
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Preprocessing Pipeline")
-    
+    with st.spinner("⏳ Loading preprocessing options..."):
+        df = st.session_state.dataset.copy()
+        # Initialize preprocessor if not exists
+        if 'preprocessor' not in st.session_state:
+            st.session_state.preprocessor = MLPreprocessor()
+        preprocessor = st.session_state.preprocessor
+        
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("🔧 Preprocessing Pipeline")
     preprocessing_tabs = st.tabs([
         "🔧 Missing Values", 
-        "🔄 Data Types", 
-        "🛠️ Feature Engineering",
+        "️ Feature Engineering",
         "📊 Encoding", 
         "⚖️ Scaling", 
         "✂️ Feature Selection",
@@ -431,26 +463,24 @@ def render_preprocessing_page():
         _render_missing_values_handling(df, preprocessor)
     
     with preprocessing_tabs[1]:
-        _render_data_type_conversion(df, preprocessor)
-    
-    with preprocessing_tabs[2]:
         _render_feature_engineering(df, preprocessor)
     
-    with preprocessing_tabs[3]:
+    with preprocessing_tabs[2]:
         _render_encoding_options(df)
     
-    with preprocessing_tabs[4]:
+    with preprocessing_tabs[3]:
         _render_scaling_options(df)
-    
-    with preprocessing_tabs[5]:
+    with preprocessing_tabs[4]:
         _render_feature_selection_options(df)
     
-    with preprocessing_tabs[6]:
+    with preprocessing_tabs[5]:
         _render_preprocessing_summary()
-    
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    create_navigation_buttons()
+        
+        st.markdown("</div>", unsafe_allow_html=True)
+        
+        st.markdown("---")
+        
+        create_navigation_buttons()
 
 # ------ Render missing values handling options ------
 def _render_missing_values_handling(df, preprocessor):
@@ -470,19 +500,24 @@ def _render_missing_values_handling(df, preprocessor):
     strategy = st.selectbox(
         "Select missing value strategy",
         ["Mean imputation", "Median imputation", "Mode imputation", "Drop rows", "Drop columns"],
-        help="Choose how to handle missing values"
-    )
+        help="Choose how to handle missing values"    )
     
     if st.button("Apply Missing Value Treatment", type="primary"):
         try:
-            with st.spinner("Processing missing values..."):
+            with st.spinner("⏳ Processing missing values..."):
                 # Create strategy dictionary
                 if strategy == "Drop rows":
+                    rows_before = len(df)
                     processed_df = df.dropna()
-                    st.session_state.preprocessing_steps.append(f"Dropped rows with missing values")
+                    rows_dropped = rows_before - len(processed_df)
+                    st.session_state.preprocessing_steps.append(f"Dropped {rows_dropped} rows with missing values")
+                    st.success(f"✅ Dropped {rows_dropped} rows with missing values.")
+                    st.toast("🗑️ Rows with missing values removed!", icon="✅")
                 elif strategy == "Drop columns":
                     processed_df = df.drop(columns=missing_cols)
                     st.session_state.preprocessing_steps.append(f"Dropped columns: {', '.join(missing_cols)}")
+                    st.success(f"✅ Dropped {len(missing_cols)} columns with missing values.")
+                    st.toast("🗑️ Columns with missing values removed!", icon="✅")
                 else:
                     # Use the preprocessor class
                     strategy_map = {
@@ -494,144 +529,16 @@ def _render_missing_values_handling(df, preprocessor):
                         df, 
                         strategy={col: strategy_map[strategy] for col in missing_cols}
                     )
-                    st.session_state.preprocessing_steps.append(f"Applied {strategy} to missing values")
+                    st.session_state.preprocessing_steps.append(f"Applied {strategy} to {len(missing_cols)} columns")
+                    st.toast(f"🔧 {strategy} applied successfully!", icon="✅")
+                    st.success(f"✅ {strategy} applied to {len(missing_cols)} columns with missing values.")
                 
                 st.session_state.dataset = processed_df
-                st.success(f"✅ {strategy} applied successfully!")
+                st.markdown("---")
                 st.rerun()
         
         except Exception as e:
             st.error(f"Error processing missing values: {e}")
-
-# ------ Render data type conversion options ------
-def _render_data_type_conversion(df, preprocessor):
-    st.markdown("#### Data Type Conversion & Optimization")
-    
-    st.markdown("**Current Data Types:**")
-    
-    # Display current data types
-    dtype_df = pd.DataFrame({
-        'Column'            : df.columns,
-        'Current Type'      : df.dtypes.astype(str),
-        'Memory Usage (KB)' : [df[col].memory_usage(deep=True) / 1024 for col in df.columns]
-    })
-    st.dataframe(dtype_df, use_container_width=True)
-    
-    # Conversion options
-    st.markdown("**Select Conversions:**")
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Object to category conversion
-        object_cols = df.select_dtypes(include=['object']).columns.tolist()
-        if object_cols:
-            st.markdown("##### Convert to Category")
-            category_cols = st.multiselect(
-                "Select object columns to convert to category",
-                object_cols,
-                help="Converts object columns to category type for memory optimization"
-            )
-        
-        # Datetime conversion
-        potential_datetime_cols = [col for col in df.columns if 'date' in col.lower() or 'time' in col.lower()]
-        if potential_datetime_cols or object_cols:
-            st.markdown("##### Convert to Datetime")
-            datetime_cols = st.multiselect(
-                "Select columns to convert to datetime",
-                potential_datetime_cols + object_cols,
-                help="Converts columns to datetime format"
-            )
-    
-    with col2:
-        # Numeric optimization
-        numeric_cols = df.select_dtypes(include=['int64', 'float64']).columns.tolist()
-        if numeric_cols:
-            optimize_numeric = st.checkbox(
-                "Optimize numeric types for memory",
-                value=True,
-                help="Automatically downcast int64 and float64 to smaller types when possible"
-            )
-    
-    if st.button("Apply Data Type Conversions", type="primary"):
-        try:
-            with st.spinner("⏳ Converting data types... Please wait."):
-                conversion_map = {}
-                removed_columns = []
-                
-                # Check for redundant index columns before conversion
-                for col in df.columns:
-                    if col.lower() in ['index', 'id', 'unnamed: 0'] or col.startswith('Unnamed'):
-                        if df[col].equals(df.index.to_series().reset_index(drop=True)):
-                            removed_columns.append(col)
-                
-                # Remove redundant columns
-                df_cleaned = df.copy()
-                if removed_columns:
-                    df_cleaned = df_cleaned.drop(columns=removed_columns)
-                    for col in removed_columns:
-                        st.info(f"ℹ️ Removed redundant column `{col}` as it's already in the index.")
-                
-                # Add category conversions
-                if 'category_cols' in locals() and category_cols:
-                    for col in category_cols:
-                        if col in df_cleaned.columns:
-                            conversion_map[col] = 'category'
-                
-                # Add datetime conversions
-                if 'datetime_cols' in locals() and datetime_cols:
-                    for col in datetime_cols:
-                        if col in df_cleaned.columns:
-                            conversion_map[col] = 'datetime'
-                
-                if conversion_map or (numeric_cols and optimize_numeric):
-                    df_converted = preprocessor.convert_data_types(
-                        df_cleaned, 
-                        conversion_map, 
-                        optimize_memory=optimize_numeric if 'optimize_numeric' in locals() else True
-                    )
-                    
-                    st.session_state.dataset = df_converted
-                    
-                    # Enhanced success message with better styling
-                    st.markdown("---")
-                    st.success("✅ Data type optimization complete.")
-                    
-                    # Calculate and display memory savings
-                    original_memory = df.memory_usage(deep=True).sum() / 1024**2
-                    new_memory = df_converted.memory_usage(deep=True).sum() / 1024**2
-                    memory_savings = ((original_memory - new_memory) / original_memory * 100)
-                    
-                    # Display metrics in columns for better visualization
-                    col1, col2, col3, col4 = st.columns(4)
-                    
-                    with col1:
-                        st.metric("Columns Converted", len(conversion_map))
-                    with col2:
-                        st.metric("Memory Before", f"{original_memory:.2f} MB")
-                    with col3:
-                        st.metric("Memory After", f"{new_memory:.2f} MB")
-                    with col4:
-                        savings_color = "normal" if memory_savings < 10 else "inverse"
-                        st.metric("Memory Savings", f"{memory_savings:.1f}%", delta=f"-{original_memory-new_memory:.2f} MB")
-                    
-                    # Show conversion details in an expander
-                    if conversion_map:
-                        with st.expander("📋 Conversion Details", expanded=False):
-                            conversion_df = pd.DataFrame([
-                                {"Column": col, "Original Type": str(df[col].dtype), "New Type": dtype}
-                                for col, dtype in conversion_map.items()
-                            ])
-                            st.dataframe(conversion_df, use_container_width=True)
-                    
-                    st.markdown("---")
-                    st.rerun()
-                else:
-                    st.warning("⚠️ No conversions selected. Please select columns to convert.")
-        
-        except Exception as e:
-            st.error(f"❌ Error converting data types: {e}")
-            st.exception(e)
 
 # ------ Render feature engineering options ------
 def _render_feature_engineering(df, preprocessor):
@@ -658,8 +565,7 @@ def _render_feature_engineering(df, preprocessor):
         
         if selected_datetime_cols:            
             feature_options = st.multiselect(
-                "Select features to create",
-                ['year', 'month', 'day', 'weekday', 'is_weekend', 'quarter', 'hour', 'minute'],
+                "Select features to create",                ['year', 'month', 'day', 'weekday', 'is_weekend', 'quarter', 'hour', 'minute'],
                 default=['year', 'month', 'weekday', 'is_weekend'],
                 help="Choose which datetime features to extract"
             )
@@ -673,29 +579,10 @@ def _render_feature_engineering(df, preprocessor):
                         
                         st.session_state.dataset = df_engineered
                         
-                        # Enhanced success message with visual separation
+                        # Add to preprocessing steps for summary (no UI message shown)
                         new_features = [col for col in df_engineered.columns if col not in df.columns]
-                        
-                        st.markdown("---")
-                        st.success("✅ Feature engineering complete.")
-                        
-                        # Display feature engineering metrics
-                        col1, col2, col3 = st.columns(3)
-                        with col1:
-                            st.metric("Source Columns", len(selected_datetime_cols))
-                        with col2:
-                            st.metric("Features Created", len(new_features))
-                        with col3:
-                            st.metric("Total Features", len(df_engineered.columns))
-                        
-                        # Show new features in an expander
-                        if new_features:
-                            with st.expander("📋 New Features Created", expanded=False):
-                                features_df = pd.DataFrame({
-                                    "Feature Name": new_features,
-                                    "Source": [selected_datetime_cols[0] if len(selected_datetime_cols) == 1 else "Multiple"] * len(new_features)
-                                })
-                                st.dataframe(features_df, use_container_width=True)
+                        step_msg = f"Created {len(new_features)} datetime features from {len(selected_datetime_cols)} columns"
+                        st.session_state.preprocessing_steps.append(step_msg)
                         
                         st.markdown("---")
                         st.rerun()
@@ -711,8 +598,7 @@ def _render_feature_engineering(df, preprocessor):
             return
         
         st.markdown("##### Create Mathematical Features")
-        
-        # Simple interface for common operations
+          # Simple interface for common operations
         col1, col2 = st.columns(2)
         
         with col1:
@@ -736,16 +622,11 @@ def _render_feature_engineering(df, preprocessor):
                     df_engineered = preprocessor.create_mathematical_features(df, feature_operations)
                     st.session_state.dataset = df_engineered
                     
-                    # Enhanced confirmation message
-                    st.markdown("<div class='success-box'>", unsafe_allow_html=True)
-                    st.success("✅ Mathematical Feature Engineering Completed!")
-                    st.markdown(f"""
-                    **Engineering Details:**
-                    - New feature: {feature_name}
-                    - Operation: {operation} of {col1_select} and {col2_select}
-                    - Formula: {col1_select} {operation} {col2_select}
-                    """)
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    # Add to preprocessing steps for summary (no UI message shown)
+                    step_msg = f"Created mathematical feature '{feature_name}' using {operation} of {col1_select} and {col2_select}"
+                    st.session_state.preprocessing_steps.append(step_msg)
+                    
+                    st.markdown("---")
                     st.rerun()
             
             except Exception as e:
@@ -799,17 +680,11 @@ def _render_feature_engineering(df, preprocessor):
                     df_engineered = preprocessor.create_binning_features(df, binning_config)
                     st.session_state.dataset = df_engineered
                     
-                    # Enhanced confirmation message
-                    st.markdown("<div class='success-box'>", unsafe_allow_html=True)
-                    st.success("✅ Binning Feature Engineering Completed!")
-                    st.markdown(f"""
-                    **Engineering Details:**
-                    - New feature: {feature_name}
-                    - Source column: {source_col}
-                    - Method: {method}
-                    - Bins: {n_bins if method != 'custom' else len(bin_edges)-1 if 'bin_edges' in locals() else 'Custom'}
-                    """)
-                    st.markdown("</div>", unsafe_allow_html=True)
+                    # Add to preprocessing steps for summary (no UI message shown)
+                    step_msg = f"Created binned feature '{feature_name}' from {source_col} using {method} method"
+                    st.session_state.preprocessing_steps.append(step_msg)
+                    
+                    st.markdown("---")
                     st.rerun()
             
             except Exception as e:
@@ -829,8 +704,7 @@ def _render_encoding_options(df):
     
     encoding_method = st.selectbox(
         "Select encoding method",
-        ["Label Encoding", "One-Hot Encoding"],
-        help="Choose how to encode categorical variables"
+        ["Label Encoding", "One-Hot Encoding"],        help="Choose how to encode categorical variables"
     )
     
     selected_cols = st.multiselect(
@@ -850,14 +724,18 @@ def _render_encoding_options(df):
                         df_encoded[col] = le.fit_transform(df_encoded[col].astype(str))
                     
                     step_msg = f"Applied Label Encoding to: {', '.join(selected_cols)}"
+                    st.success(f"✅ Label encoding applied to {len(selected_cols)} columns.")
                 
                 else:  # One-Hot Encoding
+                    original_cols = len(df_encoded.columns)
                     df_encoded = pd.get_dummies(df_encoded, columns=selected_cols, prefix=selected_cols)
+                    new_cols = len(df_encoded.columns) - original_cols
                     step_msg = f"Applied One-Hot Encoding to: {', '.join(selected_cols)}"
+                    st.success(f"✅ One-hot encoding applied to {len(selected_cols)} columns, creating {new_cols} new features.")
                 
                 st.session_state.dataset = df_encoded
                 st.session_state.preprocessing_steps.append(step_msg)
-                st.success(f"✅ {encoding_method} applied successfully!")
+                st.markdown("---")
                 st.rerun()
         
         except Exception as e:
@@ -907,45 +785,14 @@ def _render_scaling_options(df):
                 
                 # Apply scaling
                 df_scaled[numeric_cols] = scaler.fit_transform(df_scaled[numeric_cols])
-                
-                # Calculate statistics after scaling
+                  # Calculate statistics after scaling
                 scaled_stats = df_scaled[numeric_cols].describe()
                 
                 st.session_state.dataset = df_scaled
                 step_msg = f"Applied {scaling_method} to {len(numeric_cols)} numeric features"
                 st.session_state.preprocessing_steps.append(step_msg)
                 
-                # Enhanced success message with visual separation
-                st.markdown("---")
-                st.success("✅ Feature scaling applied.")
-                
-                # Display scaling metrics
-                col1, col2, col3 = st.columns(3)
-                with col1:
-                    st.metric("Features Scaled", len(numeric_cols))
-                with col2:
-                    st.metric("Scaling Method", scaling_method)
-                with col3:
-                    st.metric("Total Features", len(df_scaled.columns))
-                
-                # Show scaling details in expander
-                with st.expander("📊 Scaling Details & Statistics", expanded=False):
-                    st.markdown(f"**Method:** {scaling_method}")
-                    st.markdown(f"**Description:** {scaler_description}")
-                    
-                    # Show before/after statistics for first few columns
-                    if len(numeric_cols) > 0:
-                        st.markdown("**Before vs After Statistics (first 3 columns):**")
-                        comparison_cols = numeric_cols[:3]
-                        
-                        col_a, col_b = st.columns(2)
-                        with col_a:
-                            st.markdown("**Before Scaling:**")
-                            st.dataframe(original_stats[comparison_cols].round(3))
-                        with col_b:
-                            st.markdown("**After Scaling:**")
-                            st.dataframe(scaled_stats[comparison_cols].round(3))
-                
+                # Update summary (no UI success message shown)
                 st.markdown("---")
                 st.rerun()
         
@@ -965,12 +812,11 @@ def _render_feature_selection_options(df):
     
     if len(feature_cols) < 2:
         st.info("Need at least 2 features for selection")
-        return
+        return    st.markdown(f"**Available features:** {len(feature_cols)} columns")
     
-    st.markdown(f"**Available features:** {len(feature_cols)} columns")
     selection_method = st.selectbox(
         "Select feature selection method",
-        ["Manual Selection", "Correlation Threshold", "Feature Importance"],
+        ["Manual Selection", "Correlation Threshold", "Feature Importance", "Outlier Detection"],
         help="Choose how to select features"
     )
     
@@ -1046,8 +892,7 @@ def _render_feature_selection_options(df):
                     - Threshold: {threshold}
                     - Features removed: {len(to_drop)}
                     - Features remaining: {len(remaining_features)}
-                    
-                    **Removed features:** {', '.join(to_drop) if to_drop else 'None'}
+                      **Removed features:** {', '.join(to_drop) if to_drop else 'None'}
                     **Remaining features:** {', '.join(remaining_features[:5])}{'...' if len(remaining_features) > 5 else ''}
                     """)
                     st.markdown("</div>", unsafe_allow_html=True)
@@ -1058,6 +903,74 @@ def _render_feature_selection_options(df):
             
             except Exception as e:
                 st.error(f"Error in correlation filtering: {e}")
+    
+    elif selection_method == "Outlier Detection":
+        st.markdown("##### Outlier Detection & Removal")
+        st.markdown("Detect and remove outliers using the IQR (Interquartile Range) method.")
+        
+        numeric_cols = df.select_dtypes(include=['number']).columns.tolist()
+        if st.session_state.target in numeric_cols:
+            numeric_cols.remove(st.session_state.target)
+        
+        if not numeric_cols:
+            st.info("No numeric columns found for outlier detection")
+            return
+        
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            selected_cols = st.multiselect(
+                "Select columns for outlier detection",
+                numeric_cols,
+                default=numeric_cols,
+                help="Choose numeric columns to detect outliers in"
+            )
+        
+        with col2:
+            iqr_multiplier = st.slider(
+                "IQR Multiplier", 
+                min_value=1.0, 
+                max_value=3.0, 
+                value=1.5, 
+                step=0.1,
+                help="Higher values are more tolerant to outliers"
+            )
+        
+        if selected_cols and st.button("🧹 Remove Outliers", type="primary"):
+            try:
+                with st.spinner("Detecting and removing outliers..."):
+                    df_cleaned = df.copy()
+                    total_outliers = 0
+                    
+                    for col in selected_cols:
+                        Q1 = df_cleaned[col].quantile(0.25)
+                        Q3 = df_cleaned[col].quantile(0.75)
+                        IQR = Q3 - Q1
+                        lower_bound = Q1 - iqr_multiplier * IQR
+                        upper_bound = Q3 + iqr_multiplier * IQR
+                        
+                        # Count outliers in this column
+                        outliers_mask = (df_cleaned[col] < lower_bound) | (df_cleaned[col] > upper_bound)
+                        col_outliers = outliers_mask.sum()
+                        total_outliers += col_outliers
+                        
+                        # Remove outliers
+                        df_cleaned = df_cleaned[~outliers_mask]
+                    
+                    st.session_state.dataset = df_cleaned
+                    step_msg = f"Removed {total_outliers} outliers from {len(selected_cols)} columns using IQR method"
+                    st.session_state.preprocessing_steps.append(step_msg)
+                    
+                    # Show contextual success message
+                    st.success(f"✅ Removed {total_outliers} outliers using IQR method.")
+                    if total_outliers > 0:
+                        st.info("ℹ️ Summary updated.")
+                    
+                    st.markdown("---")
+                    st.rerun()
+                    
+            except Exception as e:
+                st.error(f"Error in outlier detection: {e}")
 
 # ------ Render preprocessing summary and reset option ------
 def _render_preprocessing_summary():
@@ -1159,13 +1072,14 @@ def render_training_page():
     # Training execution
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### Training Control")
-    
     train_col1, train_col2 = st.columns(2)
     
     with train_col1:
         if st.button("🚀 Start Training", type="primary", use_container_width=True):
             with st.spinner("⏳ Training model... Please wait."):
-                _execute_training(df)
+                success = _execute_training(df)
+                if success:
+                    st.toast("🎉 Training completed successfully!", icon="✅")
     
     with train_col2:
         if st.button("🧹 Clear Training Logs", use_container_width=True):
@@ -1238,10 +1152,9 @@ def _execute_training(df):
             st.session_state.dataset = df_cleaned
             df = df_cleaned
             
-            # Display duplicate removal message in UI
-            st.markdown("<div class='warning-box'>", unsafe_allow_html=True)
-            st.warning(f"⚠️ Removed {num_duplicates} duplicate rows before training")
-            st.markdown("</div>", unsafe_allow_html=True)
+            # Display duplicate removal success message
+            st.success(f"✅ Detected and removed {num_duplicates} duplicate rows.")
+            st.info("ℹ️ Summary updated.")
         else:
             add_log_message("✅ No duplicate rows found")
         
@@ -1387,16 +1300,17 @@ def _execute_training(df):
             'metrics': metrics,
             'y_pred': y_pred
         }
-        
         add_log_message("🎉 Training completed successfully!")
         
         # Auto-navigate to evaluation page
         st.session_state.page = 'evaluation'
         st.rerun()
+        return True
     
     except Exception as e:
         add_log_message(f"❌ Training failed: {str(e)}")
         st.error(f"Training failed: {e}")
+        return False
 
 # ------ Render the model evaluation page ------
 def render_evaluation_page():
@@ -1404,35 +1318,41 @@ def render_evaluation_page():
     
     if st.session_state.best_model is None:
         st.markdown("<div class='warning-box'>", unsafe_allow_html=True)
-        st.warning("No trained model found. Please train a model first.")
+        st.warning("⚠️ No trained model found. Please train a model first.")
         st.markdown("</div>", unsafe_allow_html=True)
         create_navigation_buttons()
         return
     
-    # Model performance metrics
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("### Model Performance")
-    
-    if 'training_results' in st.session_state and st.session_state.training_results:
-        results = st.session_state.training_results
-        metrics = results.get('metrics', {})
+    with st.spinner("⏳ Loading model evaluation results..."):
+        # Model performance metrics
+        st.markdown("<div class='card'>", unsafe_allow_html=True)
+        st.subheader("📈 Model Performance Metrics")
         
-        # Display metrics
-        create_metrics_display(metrics)
+        if 'training_results' in st.session_state and st.session_state.training_results:
+            results = st.session_state.training_results
+            metrics = results.get('metrics', {})
+            
+            # Display enhanced metrics with color coding
+            create_metrics_display(metrics)
+            
+            # Add metrics explanations
+            create_metrics_explanations()
+            
+            st.markdown("---")
+            
+            # Model details
+            st.subheader("🔍 Model Details")
+            details_col1, details_col2 = st.columns(2)
+            
+            with details_col1:
+                st.markdown(f"**🤖 Model Type:** {results.get('model_name', 'Unknown')}")
+                st.markdown(f"**🎯 Task Type:** {st.session_state.task_type.title()}")
+            
+            with details_col2:
+                st.markdown(f"**📊 Training Samples:** {st.session_state.X_train.shape[0] if st.session_state.X_train is not None else 'Unknown'}")
+                st.markdown(f"**🧪 Test Samples:** {st.session_state.X_test.shape[0] if st.session_state.X_test is not None else 'Unknown'}")
         
-        # Model details
-        st.markdown("#### Model Details")
-        details_col1, details_col2 = st.columns(2)
-        
-        with details_col1:
-            st.markdown(f"**Model Type:** {results.get('model_name', 'Unknown')}")
-            st.markdown(f"**Task Type:** {st.session_state.task_type.title()}")
-        
-        with details_col2:
-            st.markdown(f"**Training Samples:** {st.session_state.X_train.shape[0] if st.session_state.X_train is not None else 'Unknown'}")
-            st.markdown(f"**Test Samples:** {st.session_state.X_test.shape[0] if st.session_state.X_test is not None else 'Unknown'}")
-    
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
     # Enhanced Visualizations
     st.markdown("<div class='card'>", unsafe_allow_html=True)
     st.markdown("### Advanced Model Analysis")
@@ -1696,123 +1616,50 @@ def _render_learning_curves_analysis():
     if st.session_state.best_model is None or st.session_state.X_train is None:
         st.info("No trained model available for learning curve analysis")
         return
+    # Create tabs for learning curves only
+    st.markdown("#### Learning Curves Analysis")
+    st.markdown("""
+    Learning curves show how model performance changes with training set size, 
+    helping to diagnose bias and variance issues.
+    """)
     
-    # Create tabs for different curve types
-    curve_tabs = st.tabs(["📈 Learning Curves", "🎯 Validation Curves"])
-    
-    with curve_tabs[0]:
-        st.markdown("#### Learning Curves Analysis")
-        st.markdown("""
-        Learning curves show how model performance changes with training set size, 
-        helping to diagnose bias and variance issues.
-        """)
+    with st.expander("📊 Generate Learning Curves", expanded=True):
+        col1, col2 = st.columns(2)
         
-        with st.expander("📊 Generate Learning Curves", expanded=True):
-            col1, col2 = st.columns(2)
-            
-            with col1:
-                cv_folds = st.slider("Cross-validation folds", 3, 10, 5, help="Number of CV folds for learning curves")
-            
-            with col2:
-                if st.button("🔄 Generate Learning Curves", type="primary"):
-                    with st.spinner("Generating learning curves..."):
-                        try:
-                            # Combine training and test data for learning curve analysis
-                            X_combined = pd.concat([st.session_state.X_train, st.session_state.X_test])
-                            y_combined = pd.concat([st.session_state.y_train, st.session_state.y_test])
-                            
-                            fig = plot_learning_curves(
-                                st.session_state.best_model,
-                                X_combined,
-                                y_combined,
-                                st.session_state.task_type,
-                                cv_folds
-                            )
-                            
-                            if fig:
-                                st.plotly_chart(fig, use_container_width=True)
-                                
-                                # Learning curve interpretation
-                                st.markdown("##### 📋 Learning Curve Interpretation")
-                                st.markdown("""
-                                - **High Bias (Underfitting)**: Both training and validation scores are low and converge to a low value
-                                - **High Variance (Overfitting)**: Large gap between training and validation scores
-                                - **Good Fit**: Training and validation scores converge to a high value with small gap
-                                - **More Data Needed**: Validation score is still improving with more training samples
-                                """)
-                            else:
-                                st.error("Failed to generate learning curves")
-                        except Exception as e:
-                            st.error(f"Error generating learning curves: {e}")
-    
-    with curve_tabs[1]:
-        st.markdown("#### Validation Curves for Hyperparameter Tuning")
-        st.markdown("""
-        Validation curves show how model performance changes with different hyperparameter values,
-        helping to find the optimal parameter settings.
-        """)
+        with col1:
+            cv_folds = st.slider("Cross-validation folds", 3, 10, 5, help="Number of CV folds for learning curves")
         
-        with st.expander("🎯 Generate Validation Curves", expanded=True):
-            col1, col2, col3 = st.columns(3)
-            
-            with col1:
-                # Get available parameters for the current model
-                model_name = st.session_state.training_results.get('model_name', 'Random Forest')
-                param_options = get_model_params(model_name)
-                
-                if param_options:
-                    param_name = st.selectbox(
-                        "Select Parameter", 
-                        list(param_options.keys()),
-                        help="Choose which hyperparameter to analyze"
-                    )
-                else:
-                    st.warning("No parameters available for validation curves")
-                    param_name = None
-            
-            with col2:
-                cv_folds_val = st.slider("CV folds (validation)", 3, 10, 5, key="val_curve_cv")
-            
-            with col3:
-                if param_name and st.button("🔄 Generate Validation Curve", type="primary"):
-                    with st.spinner("Generating validation curve..."):
-                        try:
-                            param_range = param_options[param_name]
+        with col2:
+            if st.button("🔄 Generate Learning Curves", type="primary"):
+                with st.spinner("Generating learning curves..."):
+                    try:
+                        # Combine training and test data for learning curve analysis
+                        X_combined = pd.concat([st.session_state.X_train, st.session_state.X_test])
+                        y_combined = pd.concat([st.session_state.y_train, st.session_state.y_test])
+                        
+                        fig = plot_learning_curves(
+                            st.session_state.best_model,
+                            X_combined,
+                            y_combined,
+                            st.session_state.task_type,
+                            cv_folds
+                        )
+                        
+                        if fig:
+                            st.plotly_chart(fig, use_container_width=True)
                             
-                            # Create a fresh model instance for validation curve
-                            base_model = create_model(model_name, {}, st.session_state.task_type)
-                            
-                            # Combine training and test data
-                            X_combined = pd.concat([st.session_state.X_train, st.session_state.X_test])
-                            y_combined = pd.concat([st.session_state.y_train, st.session_state.y_test])
-                            
-                            fig = plot_validation_curve(
-                                base_model,
-                                X_combined,
-                                y_combined,
-                                param_name,
-                                param_range,
-                                st.session_state.task_type,
-                                cv_folds_val
-                            )
-                            
-                            if fig:
-                                st.plotly_chart(fig, use_container_width=True)
-                                
-                                # Show optimal parameter value
-                                st.markdown("##### 🎯 Hyperparameter Analysis")
-                                current_value = st.session_state.best_params.get(param_name, "Not specified")
-                                st.info(f"Current model uses **{param_name} = {current_value}**")
-                                
-                                st.markdown("""
-                                **Validation Curve Interpretation:**
-                                - **Underfitting**: Both curves are low at the start
-                                - **Optimal Range**: Peak of validation curve                                - **Overfitting**: Training score high, validation score drops
-                                """)
-                            else:
-                                st.error("Failed to generate validation curve")
-                        except Exception as e:
-                            st.error(f"Error generating validation curve: {e}")
+                            # Learning curve interpretation
+                            st.markdown("##### 📋 Learning Curve Interpretation")
+                            st.markdown("""
+                            - **High Bias (Underfitting)**: Both training and validation scores are low and converge to a low value
+                            - **High Variance (Overfitting)**: Large gap between training and validation scores
+                            - **Good Fit**: Training and validation scores converge to a high value with small gap
+                            - **More Data Needed**: Validation score is still improving with more training samples
+                            """)
+                        else:
+                            st.error("Failed to generate learning curves")
+                    except Exception as e:
+                        st.error(f"Error generating learning curves: {e}")
 
 # ------ Render feature importance analysis tab ------
 def _render_feature_importance_analysis():

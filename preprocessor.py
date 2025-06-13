@@ -343,95 +343,10 @@ class MLPreprocessor:
             upper_bound = Q3 + 1.5 * IQR
             
             df_processed = df_processed[(df_processed[col] >= lower_bound) & (df_processed[col] <= upper_bound)]
-        
         removed_rows = initial_rows - len(df_processed)
         self.log_step("Remove Outliers (IQR)", f"Removed {removed_rows} rows with outliers")
-        
         return df_processed
-    # =================== DATA TYPE CONVERSION ===================
     
-    def convert_data_types(self, df: pd.DataFrame, conversion_map: Dict[str, str], optimize_memory: bool = True) -> pd.DataFrame:
-        """
-        → Convert data types for optimization and proper analysis.
-        
-        Args:
-            df             : Input DataFrame
-            conversion_map : Dictionary mapping column names to target data types
-                        {'col_name': 'target_type'} where target_type can be:
-                        'category', 'datetime', 'boolean', 'int8', 'int16', 'int32', 'int64','float32', 'float64', 'string'
-            optimize_memory: Whether to optimize numeric types for memory usage
-        
-        Returns → DataFrame with converted data types
-        """
-        if not isinstance(df, pd.DataFrame):
-            raise TypeError("Input 'df' must be a pandas DataFrame")
-        
-        df_converted = df.copy()
-        converted_columns = []
-        
-        try:
-            for col, target_type in conversion_map.items():
-                if col not in df_converted.columns:
-                    print(f"⚠️ Warning: Column '{col}' not found in DataFrame")
-                    continue
-                
-                original_type = str(df_converted[col].dtype)
-                
-                if target_type == 'category':
-                    df_converted[col] = df_converted[col].astype('category')
-                    print(f"✅ Converted '{col}': {original_type} → category")
-                    
-                elif target_type == 'datetime':
-                    df_converted[col] = pd.to_datetime(df_converted[col], errors='coerce')
-                    print(f"✅ Converted '{col}': {original_type} → datetime64")
-                    
-                elif target_type == 'boolean':
-                    # Handle various boolean representations
-                    if df_converted[col].dtype == 'object':
-                        df_converted[col] = df_converted[col].map({
-                            'True': True, 'False': False, 'true': True, 'false': False,
-                            'YES': True, 'NO': False, 'yes': True, 'no': False,
-                            'Y': True, 'N': False, '1': True, '0': False,
-                            1: True, 0: False
-                        })
-                    else:
-                        df_converted[col] = df_converted[col].astype(bool)
-                    print(f"✅ Converted '{col}': {original_type} → bool")
-                    
-                elif target_type in ['int8', 'int16', 'int32', 'int64']:
-                    df_converted[col] = pd.to_numeric(df_converted[col], errors='coerce').astype(target_type)
-                    print(f"✅ Converted '{col}': {original_type} → {target_type}")
-                    
-                elif target_type in ['float32', 'float64']:
-                    df_converted[col] = pd.to_numeric(df_converted[col], errors='coerce').astype(target_type)
-                    print(f"✅ Converted '{col}': {original_type} → {target_type}")
-                    
-                elif target_type == 'string':
-                    df_converted[col] = df_converted[col].astype('string')
-                    print(f"✅ Converted '{col}': {original_type} → string")
-                
-                converted_columns.append(col)
-            
-            # Memory optimization for numeric columns
-            if optimize_memory:
-                numeric_cols = df_converted.select_dtypes(include=['int64', 'float64']).columns
-                for col in numeric_cols:
-                    if col not in converted_columns:  # Skip already converted columns
-                        if df_converted[col].dtype == 'int64':
-                            df_converted[col] = pd.to_numeric(df_converted[col], downcast='integer')
-                        elif df_converted[col].dtype == 'float64':
-                            df_converted[col] = pd.to_numeric(df_converted[col], downcast='float')
-            
-            # Log the step
-            step_message = f"Data type conversion: {len(converted_columns)} columns converted"
-            self.steps_log.append(step_message)
-            print(f"📝 {step_message}")
-            
-            return df_converted
-            
-        except Exception as e:
-            print(f"❌ Error in data type conversion: {str(e)}")
-            raise
     # =================== FEATURE ENGINEERING ===================
     
     def create_datetime_features(self, df: pd.DataFrame, datetime_cols: List[str], features: List[str] = None) -> pd.DataFrame:
