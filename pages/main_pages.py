@@ -7,9 +7,9 @@ from sklearn.model_selection import train_test_split, GridSearchCV, RandomizedSe
 from sklearn.preprocessing import LabelEncoder
 
 import streamlit as st
-from preprocessor import MLPreprocessor
-from navigation import create_navigation_buttons, display_dataset_overview
-from utils import (
+from preprocessing.preprocessor import MLPreprocessor
+from utils.navigation import create_navigation_buttons, display_dataset_overview
+from utils.helpers import (
     get_model_params, create_model, evaluate_model, add_log_message, plot_feature_importance,
     plot_regression_results, get_model_metrics_summary, create_metrics_display, create_metrics_explanations,
     detect_and_remove_duplicates, plot_learning_curves, detect_task_type,
@@ -146,11 +146,9 @@ def render_home_page():
         - Use hyperparameter tuning
         - Validate with cross-validation
         """)
-    
     st.markdown("</div>", unsafe_allow_html=True)
-    
+
     st.markdown("---")
-    create_navigation_buttons()
 
 # ------ Render the data exploration page with comprehensive data analysis ------
 def render_data_exploration_page():
@@ -766,10 +764,9 @@ def _render_encoding_options(df):
                     df_encoded = pd.get_dummies(df_encoded, columns=selected_cols, prefix=selected_cols)
                     new_cols = len(df_encoded.columns) - original_cols
                     step_msg = f"Applied One-Hot Encoding to: {', '.join(selected_cols)}"
-                    st.success(f"✅ One-hot encoding applied to {len(selected_cols)} columns, creating {new_cols} new features.")
-                
+                    st.success(f"✅ One-hot encoding applied to {len(selected_cols)} columns, creating {new_cols} new features.")                
                 # Ensure Arrow compatibility before storing
-                from preprocessor import MLPreprocessor
+                from preprocessing.preprocessor import MLPreprocessor
                 if 'preprocessor' not in st.session_state:
                     st.session_state.preprocessor = MLPreprocessor()
                 df_encoded = st.session_state.preprocessor.ensure_arrow_compatibility(df_encoded)
@@ -824,14 +821,13 @@ def _render_scaling_options(df):
                 else:
                     scaler = RobustScaler()
                     scaler_description = "Uses median and IQR, robust to outliers"
-                  # Apply scaling
+                # Apply scaling
                 df_scaled[numeric_cols] = scaler.fit_transform(df_scaled[numeric_cols])
                 
-                # Calculate statistics after scaling
-                scaled_stats = df_scaled[numeric_cols].describe()
+                # Calculate statistics after scaling                scaled_stats = df_scaled[numeric_cols].describe()
                 
                 # Ensure Arrow compatibility before storing
-                from preprocessor import MLPreprocessor
+                from preprocessing.preprocessor import MLPreprocessor
                 if 'preprocessor' not in st.session_state:
                     st.session_state.preprocessor = MLPreprocessor()
                 df_scaled = st.session_state.preprocessor.ensure_arrow_compatibility(df_scaled)
@@ -1483,7 +1479,6 @@ def _render_classification_performance():
             fig_cm_norm = plot_confusion_matrix_enhanced(y_true, y_pred, normalize=True)
             if fig_cm_norm:
                 st.plotly_chart(fig_cm_norm, use_container_width=True)
-    
     with perf_tabs[1]:
         st.markdown("##### ROC Curve Analysis")
         unique_classes = np.unique(y_true)
@@ -1494,7 +1489,8 @@ def _render_classification_performance():
             if fig_roc:
                 st.plotly_chart(fig_roc, use_container_width=True)
         elif len(unique_classes) > 2:
-            # Multiclass classification            fig_roc = plot_roc_curve_multiclass(st.session_state.best_model, st.session_state.X_test, y_true)
+            # Multiclass classification
+            fig_roc = plot_roc_curve_multiclass(st.session_state.best_model, st.session_state.X_test, y_true)
             if fig_roc:
                 st.plotly_chart(fig_roc, use_container_width=True)
         else:

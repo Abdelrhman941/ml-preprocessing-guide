@@ -12,25 +12,21 @@ from sklearn.metrics import (
     roc_curve, auc, classification_report, precision_score, recall_score
 )
 from sklearn.preprocessing import label_binarize
-import seaborn as sns
-import matplotlib.pyplot as plt
 import xgboost as xgb
 import lightgbm as lgb
 import warnings
 warnings.filterwarnings('ignore')
 
 # Import configuration
-from config import HYPERPARAMETER_GRIDS, MODEL_CONFIG, COLOR_SCHEMES
+from config.settings import HYPERPARAMETER_GRIDS, MODEL_CONFIG, COLOR_SCHEMES
 
 def detect_task_type(y):
     """
-    Automatically detect if the target variable is for classification or regression.
+    → Automatically detect if the target variable is for classification or regression.
     
-    Args:
-        y: Target variable (pandas Series or array-like)
+    Args    → y  : Target variable (pandas Series or array-like)
     
-    Returns:
-        str: 'classification' or 'regression'
+    Returns → str: 'classification' or 'regression'
     """
     # Convert to pandas Series if it isn't already
     if not isinstance(y, pd.Series):
@@ -172,21 +168,16 @@ def plot_feature_importance(model, feature_names, top_n: int = 15):
         y=top_features,
         orientation='h',
         title=f"Top {top_n} Feature Importances",
-        labels={'x': 'Importance', 'y': 'Features'}
-    )
+        labels={'x': 'Importance', 'y': 'Features'} )
     
     fig.update_layout(
         height=max(400, top_n * 25),
-        yaxis={'categoryorder': 'total ascending'}
-    )
+        yaxis={'categoryorder': 'total ascending'} )
     
     return fig
 
 # Plot ROC curves for binary and multiclass classification
 def plot_roc_curve(model, X, y):
-    """
-    Legacy function - redirects to plot_roc_curve_multiclass for compatibility.
-    """
     return plot_roc_curve_multiclass(model, X, y)
 
 # Plot actual vs predicted values for regression
@@ -195,11 +186,11 @@ def plot_regression_results(y_true, y_pred):
     
     # Scatter plot
     fig.add_trace(go.Scatter(
-        x=y_true,
-        y=y_pred,
-        mode='markers',
-        name='Predictions',
-        marker=dict(color='blue', size=8, opacity=0.6)
+        x      = y_true,
+        y      = y_pred,
+        mode   = 'markers',
+        name   = 'Predictions',
+        marker = dict(color='blue', size=8, opacity=0.6)
     ))
     
     # Perfect prediction line
@@ -242,10 +233,10 @@ def get_model_metrics_summary(model, X_test, y_test, task_type: str):
     
     if task_type == 'classification':
         metrics = {
-            'Accuracy': accuracy_score(y_test, y_pred),
-            'F1 Score': f1_score(y_test, y_pred, average='weighted'),
-            'Precision': precision_score(y_test, y_pred, average='weighted'),
-            'Recall': recall_score(y_test, y_pred, average='weighted')
+            'Accuracy'  : accuracy_score(y_test, y_pred),
+            'F1 Score'  : f1_score(y_test, y_pred, average='weighted'),
+            'Precision' : precision_score(y_test, y_pred, average='weighted'),
+            'Recall'    : recall_score(y_test, y_pred, average='weighted')
         }
         
         # Add ROC AUC for binary and multiclass classification
@@ -268,40 +259,38 @@ def get_model_metrics_summary(model, X_test, y_test, task_type: str):
             print(f"Warning: Could not compute ROC AUC: {e}")
     else:
         metrics = {
-            'R² Score': r2_score(y_test, y_pred),
-            'MSE': mean_squared_error(y_test, y_pred),
-            'MAE': mean_absolute_error(y_test, y_pred),
-            'RMSE': np.sqrt(mean_squared_error(y_test, y_pred))
+            'R² Score' : r2_score(y_test, y_pred),
+            'MSE'      : mean_squared_error(y_test, y_pred),
+            'MAE'      : mean_absolute_error(y_test, y_pred),
+            'RMSE'     : np.sqrt(mean_squared_error(y_test, y_pred))
         }
     
     return metrics
 
 def get_classification_report(y_test, y_pred, target_names=None):
     """
-    Generate comprehensive classification report.
+    → Generate comprehensive classification report.
     
     Args:
-        y_test: True labels
-        y_pred: Predicted labels
-        target_names: List of target class names
+        y_test       : True labels
+        y_pred       : Predicted labels
+        target_names : List of target class names
     
-    Returns:
-        str: Formatted classification report
+    Returns → str: Formatted classification report
     """
     return classification_report(y_test, y_pred, target_names=target_names)
 
 def plot_confusion_matrix_enhanced(y_true, y_pred, labels=None, normalize=False):
     """
-    Create enhanced confusion matrix with better styling.
+    → Create enhanced confusion matrix with better styling.
     
     Args:
-        y_true: True labels
-        y_pred: Predicted labels
-        labels: Class labels
-        normalize: Whether to normalize the confusion matrix
+        y_true    : True labels
+        y_pred    : Predicted labels
+        labels    : Class labels
+        normalize : Whether to normalize the confusion matrix
     
-    Returns:
-        Plotly figure
+    Returns → Plotly figure
     """
     cm = confusion_matrix(y_true, y_pred)
     
@@ -337,16 +326,15 @@ def plot_confusion_matrix_enhanced(y_true, y_pred, labels=None, normalize=False)
 
 def plot_roc_curve_multiclass(model, X_test, y_test, class_names=None):
     """
-    Plot ROC curves for multiclass classification.
+    → Plot ROC curves for multiclass classification.
     
     Args:
-        model: Trained model with predict_proba method
-        X_test: Test features
-        y_test: Test labels
-        class_names: List of class names
+        model       : Trained model with predict_proba method
+        X_test      : Test features
+        y_test      : Test labels
+        class_names : List of class names
     
-    Returns:
-        Plotly figure
+    Returns → Plotly figure
     """
     try:
         y_pred_proba = model.predict_proba(X_test)
@@ -424,9 +412,6 @@ def plot_roc_curve_multiclass(model, X_test, y_test, class_names=None):
 
 # Create a formatted display of model metrics with color coding and explanations
 def create_metrics_display(metrics: dict):
-    """
-    Display model metrics with color-coded performance indicators and explanations
-    """
     # Color legend
     st.markdown("""
     <div style="text-align: center; margin-bottom: 1rem; padding: 0.5rem; border-radius: 0.25rem; background-color: rgba(255,255,255,0.05);">
@@ -505,7 +490,7 @@ def create_metrics_display(metrics: dict):
 
 def detect_and_remove_duplicates(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     """
-    Detect and remove duplicate rows from the dataset.
+    → Detect and remove duplicate rows from the dataset.
     
     Args:
         df: Input DataFrame
@@ -528,7 +513,7 @@ def detect_and_remove_duplicates(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
 
 def plot_learning_curves(model, X, y, task_type: str = 'classification', cv: int = 5):
     """
-    Generate learning curves for model performance evaluation.
+    → Generate learning curves for model performance evaluation.
     
     Args:
         model    : Trained model
@@ -626,7 +611,6 @@ def plot_learning_curves(model, X, y, task_type: str = 'classification', cv: int
         st.error(f"Error generating learning curves: {e}")
         return None
 
-# Create an enhanced preprocessing summary with detailed information.
 def create_enhanced_preprocessing_summary(steps: list, dataset_info: dict):
     """
     → Create an enhanced preprocessing summary with detailed information.
@@ -649,10 +633,8 @@ def create_enhanced_preprocessing_summary(steps: list, dataset_info: dict):
     
     return summary
 
+# Display metric explanations in expandable sections
 def create_metrics_explanations():
-    """
-    Display metric explanations in expandable sections
-    """
     st.markdown("---")
     st.markdown("### 📊 Understanding Your Metrics")
     

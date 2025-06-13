@@ -7,7 +7,7 @@ from typing import List, Dict, Tuple, Optional
 
 # Scikit-learn imports
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
-from sklearn.impute import  KNNImputer
+from sklearn.impute import KNNImputer
 
 # Imbalanced learning imports
 from imblearn.over_sampling import SMOTE, RandomOverSampler

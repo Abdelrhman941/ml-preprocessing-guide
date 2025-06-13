@@ -1,7 +1,13 @@
 import numpy as np
 import pandas as pd
-from utils import detect_and_remove_duplicates, plot_learning_curves, create_model
-from preprocessor import MLPreprocessor
+import sys
+import os
+
+# Add parent directory to path so we can import from the main project
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from utils.helpers import detect_and_remove_duplicates, plot_learning_curves, create_model
+from preprocessing.preprocessor import MLPreprocessor
 import warnings
 warnings.filterwarnings('ignore')
 

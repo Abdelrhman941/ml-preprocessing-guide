@@ -3,8 +3,8 @@ import warnings
 warnings.filterwarnings('ignore')
 
 # Import custom modules
-from navigation import initialize_session_state, apply_custom_css, create_navigation_slides, create_quick_settings
-from pages import (
+from utils.navigation import initialize_session_state, apply_custom_css, create_navigation_slides, create_quick_settings
+from pages.main_pages import (
     render_home_page, 
     render_data_exploration_page, 
     render_preprocessing_page,
@@ -17,7 +17,7 @@ st.set_page_config(
     page_title  = "ML Studio",
     page_icon   = "🚀",
     layout      = "wide",
-    initial_sidebar_state = "expanded"
+    initial_sidebar_state = "collapsed"  # Hide default sidebar
 )
 
 def main():

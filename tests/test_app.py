@@ -1,6 +1,10 @@
 import sys
 import time
 import traceback
+import os
+
+# Add parent directory to path so we can import from the main project
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # ------ Test that all modules can be imported successfully ------
 def test_imports():
@@ -19,16 +23,15 @@ def test_imports():
     except ImportError as e:
         print(f"❌ Failed to import config: {e}")
         return False
-    
     try:
-        import preprocessor as preprocessor
+        import preprocessing.preprocessor as preprocessor
         print("✅ preprocessor module imported successfully")
     except ImportError as e:
         print(f"❌ Failed to import preprocessor: {e}")
         return False
     
     try:
-        import navigation as navigation
+        import utils.navigation as navigation
         print("✅ navigation module imported successfully")
     except ImportError as e:
         print(f"❌ Failed to import navigation: {e}")
@@ -47,7 +50,7 @@ def test_utility_functions():
     print("\n🧪 Testing utility functions...")
     
     try:
-        from utils import load_sample_dataset, get_model_params, create_model
+        from utils.helpers import load_sample_dataset, get_model_params, create_model
         
         # Test loading sample dataset
         df, task_type = load_sample_dataset("Iris (Classification)")    # Replace with your actual dataset name, if sample dataset : write (...)
@@ -81,11 +84,10 @@ def test_utility_functions():
         return False
 
 def test_preprocessor():
-    print("\n🧪 Testing MLPreprocessor...")
-    
+    print("\n🧪 Testing MLPreprocessor...")    
     try:
-        from preprocessor import MLPreprocessor
-        from utils import load_sample_dataset
+        from preprocessing.preprocessor import MLPreprocessor
+        from utils.helpers import load_sample_dataset
         
         # Load test data
         df, _ = load_sample_dataset("Iris (Classification)")  # Replace with your actual dataset name, if sample dataset : write (...)
@@ -128,7 +130,7 @@ def test_configuration():
     print("\n🧪 Testing configuration...")
     
     try:
-        from config import (
+        from config.settings import (
             APP_CONFIG, MODEL_CONFIG, PREPROCESSING_CONFIG, 
             HYPERPARAMETER_GRIDS, COLOR_SCHEMES
         )

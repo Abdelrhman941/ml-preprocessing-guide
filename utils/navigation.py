@@ -2,7 +2,7 @@ import streamlit as st
 
 # ------ Initialize all session state variables ------
 def initialize_session_state():
-    from preprocessor import MLPreprocessor
+    from preprocessing.preprocessor import MLPreprocessor
     
     default_values = {
         'page'               : 'home',
@@ -34,8 +34,26 @@ def initialize_session_state():
 
 # ------ Apply custom CSS for styling ------
 def apply_custom_css():
-    st.markdown("""
-    <style>
+    st.markdown("""    <style>
+        /* Hide default Streamlit sidebar navigation */
+        .css-1lcbmhc.e1fqkh3o0 {
+            display: none !important;
+        }
+        .css-1d391kg {
+            display: none !important;
+        }
+        section[data-testid="stSidebar"] .css-1lcbmhc {
+            display: none !important;
+        }
+        /* Hide Streamlit's auto-generated page navigation */
+        .css-1629p8f.e1nzilvr2 {
+            display: none !important;
+        }
+        /* Hide any default navigation elements */
+        .stSelectbox[data-baseweb="select"] {
+            display: none !important;
+        }
+        
         .main-header {
             font-size: 3rem;
             font-weight: 700;
@@ -242,7 +260,7 @@ def create_navigation_slides():
 # ------ Create quick settings in a collapsible section ------
 def create_quick_settings():
     import pandas as pd
-    from utils import load_sample_dataset
+    from utils.helpers import load_sample_dataset
     
     with st.expander("⚙️ Quick Settings", expanded=False):
         col1, col2, col3 = st.columns(3)
