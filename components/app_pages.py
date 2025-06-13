@@ -146,9 +146,6 @@ def render_home_page():
         - Use hyperparameter tuning
         - Validate with cross-validation
         """)
-    st.markdown("</div>", unsafe_allow_html=True)
-
-    st.markdown("---")
 
 # ------ Render the data exploration page with comprehensive data analysis ------
 def render_data_exploration_page():
@@ -1154,15 +1151,13 @@ def render_training_page():
             logs_to_show = st.session_state.training_logs if show_all_logs else st.session_state.training_logs[-10:]
             
             # Enhanced log styling
-            st.markdown("""
-            <div style="
+            st.markdown("""            <div style="
                 background-color: rgba(0,0,0,0.05);
                 border-radius: 0.5rem;
                 padding: 1rem;
                 max-height: 300px;
                 overflow-y: auto;
                 font-family: monospace;
-                border-left: 4px solid #5bc0be;
             ">
             """, unsafe_allow_html=True)
             

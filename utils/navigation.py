@@ -35,23 +35,31 @@ def initialize_session_state():
 # ------ Apply custom CSS for styling ------
 def apply_custom_css():
     st.markdown("""    <style>
-        /* Hide default Streamlit sidebar navigation */
-        .css-1lcbmhc.e1fqkh3o0 {
+        /* COMPLETELY HIDE STREAMLIT SIDEBAR AND DEFAULT NAVIGATION */
+        section[data-testid="stSidebar"] {
             display: none !important;
         }
         .css-1d391kg {
             display: none !important;
         }
-        section[data-testid="stSidebar"] .css-1lcbmhc {
+        .css-1lcbmhc {
             display: none !important;
         }
-        /* Hide Streamlit's auto-generated page navigation */
-        .css-1629p8f.e1nzilvr2 {
+        div[data-testid="stSidebarNav"] {
             display: none !important;
         }
-        /* Hide any default navigation elements */
-        .stSelectbox[data-baseweb="select"] {
+        .css-1629p8f {
             display: none !important;
+        }
+        .css-6qob1r {
+            display: none !important;
+        }
+        /* Hide any page navigation elements */
+        nav[role="navigation"] {
+            display: none !important;
+        }
+        .main .block-container {
+            padding-top: 1rem !important;
         }
         
         .main-header {
@@ -71,15 +79,11 @@ def apply_custom_css():
             50% { background-position: 100% 50%; }
             100% { background-position: 0% 50%; }
         }
-        
         .metric-card {
-            background: rgba(58, 80, 107, 0.13);
+            background: rgba(58, 80, 107, 0.05);
             padding: 1.5rem;
-            border-radius: 25px;
+            border-radius: 12px;
             color: #e0e1dd;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(91, 192, 190, 0.18);
             text-align: center;
             margin: 0.5rem 0;
         }
@@ -99,24 +103,20 @@ def apply_custom_css():
         }
         
         .card {
-            background: rgba(58, 80, 107, 0.13);
+            background: rgba(58, 80, 107, 0.05);
             padding: 2rem;
-            border-radius: 25px;
+            border-radius: 12px;
             color: #e0e1dd;
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.10);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(91, 192, 190, 0.18);
             margin-bottom: 2rem;
         }
-        
         .slide-nav {
             display: flex;
             justify-content: center;
             align-items: center;
             margin: 20px 0;
             padding: 10px;
-            background: rgba(0,0,0,0.1);
-            border-radius: 15px;
+            background: rgba(0,0,0,0.03);
+            border-radius: 12px;
             gap: 10px;
         }
         
@@ -125,7 +125,7 @@ def apply_custom_css():
             flex-direction: column;
             align-items: center;
             padding: 10px 15px;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             min-width: 120px;
@@ -135,17 +135,14 @@ def apply_custom_css():
         .nav-step.active {
             background: linear-gradient(135deg, #4ECDC4, #45B7D1);
             color: white;
-            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.4);
         }
         
         .nav-step.completed {
-            background: rgba(76, 175, 80, 0.2);
-            border: 2px solid #4CAF50;
+            background: rgba(76, 175, 80, 0.15);
         }
         
         .nav-step:hover:not(.disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            background: rgba(78, 205, 196, 0.1);
         }
         
         .step-number {
@@ -157,11 +154,10 @@ def apply_custom_css():
             font-size: 12px;
             font-weight: bold;
         }
-        
         .progress-line {
-            height: 3px;
+            height: 2px;
             background: linear-gradient(90deg, #4ECDC4, #45B7D1);
-            border-radius: 2px;
+            border-radius: 1px;
             margin: 10px 0;
         }
         
@@ -169,34 +165,24 @@ def apply_custom_css():
             background: #232931;
             color: #e0e1dd;
             padding: 1rem;
-            border-radius: 10px;
-            font-family: 'Courier New', monospace;
+            border-radius: 10px;            font-family: 'Courier New', monospace;
             max-height: 300px;
             overflow-y: auto;
-            border: 1px solid #5bc0be;
             margin: 1rem 0;
-        }
-        
-        .info-box {
-            background: rgba(91, 192, 190, 0.1);
-            border: 1px solid #5bc0be;
-            border-radius: 10px;
+        }          .info-box {
+            background: rgba(91, 192, 190, 0.05);
+            border-radius: 8px;
             padding: 1rem;
             margin: 1rem 0;
         }
-        
         .warning-box {
-            background: rgba(255, 193, 7, 0.1);
-            border: 1px solid #ffc107;
-            border-radius: 10px;
+            background: rgba(255, 193, 7, 0.05);
+            border-radius: 8px;
             padding: 1rem;
             margin: 1rem 0;
-        }
-        
-        .success-box {
-            background: rgba(40, 167, 69, 0.1);
-            border: 1px solid #28a745;
-            border-radius: 10px;
+        }          .success-box {
+            background: rgba(40, 167, 69, 0.05);
+            border-radius: 8px;
             padding: 1rem;
             margin: 1rem 0;
         }

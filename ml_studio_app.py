@@ -4,7 +4,7 @@ warnings.filterwarnings('ignore')
 
 # Import custom modules
 from utils.navigation import initialize_session_state, apply_custom_css, create_navigation_slides, create_quick_settings
-from pages.main_pages import (
+from components.app_pages import (
     render_home_page, 
     render_data_exploration_page, 
     render_preprocessing_page,
@@ -19,6 +19,56 @@ st.set_page_config(
     layout      = "wide",
     initial_sidebar_state = "collapsed"  # Hide default sidebar
 )
+
+# Force hide sidebar completely
+st.markdown("""
+<style>
+    /* Hide sidebar completely */
+    section[data-testid="stSidebar"] {
+        display: none !important;
+    }
+    .main .block-container {
+        padding-left: 1rem !important;
+        padding-right: 1rem !important;
+    }
+    
+    /* Clean up Streamlit default styling */
+    .stAlert {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .stSelectbox > div > div {
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        box-shadow: none !important;
+    }
+    
+    .stButton > button {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+    
+    .stTabs [data-baseweb="tab"] {
+        border: none !important;
+        background-color: rgba(255,255,255,0.05) !important;
+        border-radius: 8px !important;
+    }
+    
+    /* Remove shadows from cards and containers */
+    .element-container {
+        box-shadow: none !important;
+    }
+    
+    .stExpander {
+        border: 1px solid rgba(255,255,255,0.1) !important;
+        box-shadow: none !important;
+    }
+</style>
+""", unsafe_allow_html=True)
 
 def main():
     # Initialize session state and apply styling
