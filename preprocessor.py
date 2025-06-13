@@ -2,17 +2,12 @@ import io
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-import seaborn as sns
 import warnings
-from scipy import stats
-from collections import Counter
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Dict, Tuple, Optional
 
 # Scikit-learn imports
-from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler, LabelEncoder, PolynomialFeatures
-from sklearn.feature_selection import SelectKBest, chi2, f_classif, RFE, SelectFromModel
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.impute import SimpleImputer, KNNImputer
+from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
+from sklearn.impute import  KNNImputer
 
 # Imbalanced learning imports
 from imblearn.over_sampling import SMOTE, RandomOverSampler
@@ -21,55 +16,44 @@ from imblearn.combine import SMOTETomek
 
 # Suppress warnings for cleaner output
 warnings.filterwarnings('ignore')
-
-
+##############################################################
 class MLPreprocessor:
-    """
-    A comprehensive machine learning preprocessing class that handles all stages
-    of data preparation for ML workflows.
-    """
-    
     def __init__(self):
-        """Initialize the preprocessor with empty state dictionaries."""
-        self.scalers = {}
-        self.imputers = {}
-        self.encoders = {}
-        self.feature_names = []
-        self.steps_log = []
+        self.scalers        = {}
+        self.imputers       = {}
+        self.encoders       = {}
+        self.feature_names  = []
+        self.steps_log      = []
         self.balancing_info = {}
     
     def log_step(self, step_name: str, details: str) -> None:
         """
-        Log preprocessing steps for tracking and reproducibility.
-        
+        → Log preprocessing steps for tracking and reproducibility.
         Args:
-            step_name: Name of the preprocessing step
-            details: Description of what was done
+            step_name : Name of the preprocessing step
+            details   : Description of what was done
         """
-        log_entry = f"✅ {step_name}: {details}"
+        log_entry = f"✅ {step_name} : {details}"
         self.steps_log.append(log_entry)
         print(log_entry)
     
+    # Get a summary of all preprocessing steps performed
     def get_preprocessing_summary(self) -> List[str]:
-        """Get a summary of all preprocessing steps performed."""
         return self.steps_log.copy()
     
+    # Clear the preprocessing log
     def clear_log(self) -> None:
-        """Clear the preprocessing log."""
         self.steps_log = []
-    
     # =================== DATA UNDERSTANDING & INSPECTION ===================
     
     def data_overview(self, df: pd.DataFrame, sample_size: int = 5) -> Dict:
         """
-        Provide comprehensive overview of the dataset.
-        
+        → Provide comprehensive overview of the dataset.
         Args:
-            df: Input DataFrame
-            sample_size: Number of random samples to display
-            
-        Returns:
-            Dictionary containing overview metrics
+            df          : Input DataFrame
+            sample_size : Number of random samples to display
+        
+        Returns → Dictionary containing overview metrics
         """
         if not isinstance(df, pd.DataFrame):
             raise TypeError("Input 'df' must be a pandas DataFrame")
@@ -80,10 +64,10 @@ class MLPreprocessor:
         
         try:
             overview = {
-                'shape': df.shape,
+                'shape'          : df.shape,
                 'duplicated_rows': df.duplicated().sum(),
-                'missing_values': df.isnull().sum().sum(),
-                'data_types': df.dtypes.value_counts().to_dict()
+                'missing_values' : df.isnull().sum().sum(),
+                'data_types'     : df.dtypes.value_counts().to_dict()
             }
         except Exception as e:
             raise RuntimeError(f"Error computing overview metrics: {e}")
@@ -131,12 +115,6 @@ class MLPreprocessor:
         return overview
     
     def plot_missing_data(self, df: pd.DataFrame) -> None:
-        """
-        Visualize missing data patterns.
-        
-        Args:
-            df: Input DataFrame
-        """
         missing_data = df.isnull().sum()
         missing_data = missing_data[missing_data > 0].sort_values(ascending=False)
         
@@ -154,18 +132,13 @@ class MLPreprocessor:
         plt.show()
         
         self.log_step("Missing Data Visualization", f"Plotted {len(missing_data)} columns with missing data")
-    
     # =================== MISSING DATA HANDLING ===================
     
     def _auto_missing_strategy(self, df: pd.DataFrame) -> Dict[str, str]:
         """
-        Automatically determine the best missing value strategy for each column.
+        → Automatically determine the best missing value strategy for each column.
         
-        Args:
-            df: Input DataFrame
-            
-        Returns:
-            Dictionary mapping column names to strategies
+        Returns → Dictionary mapping column names to strategies
         """
         strategy = {}
         
@@ -189,24 +162,17 @@ class MLPreprocessor:
         
         return strategy
     
-    def handle_missing_data(
-        self, 
-        df: pd.DataFrame, 
-        strategy: Optional[Dict[str, str]] = None,
-        drop_threshold: float = 0.7,
-        advanced_imputation: bool = False
-    ) -> pd.DataFrame:
+    def handle_missing_data(self, df: pd.DataFrame, strategy: Optional[Dict[str, str]] = None,advanced_imputation: bool = False) -> pd.DataFrame:
         """
-        Handle missing data using various strategies.
+        → Handle missing data using various strategies.
         
         Args:
-            df: Input DataFrame
-            strategy: Dictionary mapping column names to strategies
-            drop_threshold: Threshold for dropping columns with too many missing values
-            advanced_imputation: Whether to use advanced imputation methods
-            
-        Returns:
-            DataFrame with missing values handled
+            df                  : Input DataFrame
+            strategy            : Dictionary mapping column names to strategies
+            drop_threshold      : Threshold for dropping columns with too many missing values
+            advanced_imputation : Whether to use advanced imputation methods
+        
+        Returns → DataFrame with missing values handled
         """
         df_processed = df.copy()
         
@@ -255,24 +221,17 @@ class MLPreprocessor:
         
         return df_processed
     
-    def remove_duplicates(
-        self,
-        df: pd.DataFrame,
-        subset: Optional[List[str]] = None,
-        keep: str = 'first',
-        ignore_index: bool = False
-    ) -> pd.DataFrame:
+    def remove_duplicates(self, df: pd.DataFrame, subset: Optional[List[str]] = None, keep: str = 'first', ignore_index: bool = False) -> pd.DataFrame:
         """
-        Remove duplicate rows from DataFrame.
+        → Remove duplicate rows from DataFrame.
         
         Args:
-            df: Input DataFrame
-            subset: Column labels to consider for identifying duplicates
-            keep: Which duplicates to keep ('first', 'last', False)
-            ignore_index: Whether to reset index after removing duplicates
-            
-        Returns:
-            DataFrame with duplicates removed
+            df           : Input DataFrame
+            subset       : Column labels to consider for identifying duplicates
+            keep         : Which duplicates to keep ('first', 'last', False)
+            ignore_index : Whether to reset index after removing duplicates
+        
+        Returns → DataFrame with duplicates removed
         """
         initial_rows = len(df)
         df_processed = df.drop_duplicates(subset=subset, keep=keep, ignore_index=ignore_index)
@@ -287,22 +246,21 @@ class MLPreprocessor:
     
     def detect_duplicates(self, df: pd.DataFrame, subset: Optional[List[str]] = None) -> Dict:
         """
-        Detect and analyze duplicate rows.
+        → Detect and analyze duplicate rows.
         
         Args:
-            df: Input DataFrame
-            subset: Column labels to consider for identifying duplicates
-            
-        Returns:
-            Dictionary with duplicate analysis results
+            df     : Input DataFrame
+            subset : Column labels to consider for identifying duplicates
+        
+        Returns → Dictionary with duplicate analysis results
         """
         duplicated_mask = df.duplicated(subset=subset, keep=False)
         duplicate_count = duplicated_mask.sum()
         
         result = {
-            'total_duplicates': duplicate_count,
-            'unique_duplicate_groups': df[duplicated_mask].duplicated(subset=subset).sum() if duplicate_count > 0 else 0,
-            'duplicate_percentage': (duplicate_count / len(df)) * 100 if len(df) > 0 else 0
+            'total_duplicates'        : duplicate_count,
+            'unique_duplicate_groups' : df[duplicated_mask].duplicated(subset=subset).sum() if duplicate_count > 0 else 0,
+            'duplicate_percentage'    : (duplicate_count / len(df)) * 100 if len(df) > 0 else 0
         }
         
         if duplicate_count > 0:
@@ -314,19 +272,17 @@ class MLPreprocessor:
         
         self.log_step("Duplicate Detection", f"Found {duplicate_count} duplicate rows")
         return result
-    
     # =================== OUTLIER DETECTION & TREATMENT ===================
     
     def detect_outliers_iqr(self, df: pd.DataFrame, columns: Optional[List[str]] = None) -> Dict:
         """
-        Detect outliers using the Interquartile Range (IQR) method.
+        → Detect outliers using the Interquartile Range (IQR) method.
         
         Args:
-            df: Input DataFrame
-            columns: List of columns to check for outliers
+            df      : Input DataFrame
+            columns : List of columns to check for outliers
             
-        Returns:
-            Dictionary with outlier information
+        Returns → Dictionary with outlier information
         """
         if columns is None:
             columns = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -337,8 +293,8 @@ class MLPreprocessor:
             if col not in df.columns:
                 continue
                 
-            Q1 = df[col].quantile(0.25)
-            Q3 = df[col].quantile(0.75)
+            Q1  = df[col].quantile(0.25)
+            Q3  = df[col].quantile(0.75)
             IQR = Q3 - Q1
             
             lower_bound = Q1 - 1.5 * IQR
@@ -347,11 +303,11 @@ class MLPreprocessor:
             outliers = df[(df[col] < lower_bound) | (df[col] > upper_bound)]
             
             outliers_info[col] = {
-                'count': len(outliers),
-                'percentage': (len(outliers) / len(df)) * 100,
-                'lower_bound': lower_bound,
-                'upper_bound': upper_bound,
-                'outlier_values': outliers[col].tolist()
+                'count'          : len(outliers),
+                'percentage'     : (len(outliers) / len(df)) * 100,
+                'lower_bound'    : lower_bound,
+                'upper_bound'    : upper_bound,
+                'outlier_values' : outliers[col].tolist()
             }
         
         total_outliers = sum(info['count'] for info in outliers_info.values())
@@ -361,14 +317,13 @@ class MLPreprocessor:
     
     def remove_outliers_iqr(self, df: pd.DataFrame, columns: Optional[List[str]] = None) -> pd.DataFrame:
         """
-        Remove outliers using the IQR method.
+        → Remove outliers using the IQR method.
         
         Args:
-            df: Input DataFrame
-            columns: List of columns to remove outliers from
+            df      : Input DataFrame
+            columns : List of columns to remove outliers from
             
-        Returns:
-            DataFrame with outliers removed
+        Returns → DataFrame with outliers removed
         """
         if columns is None:
             columns = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -380,38 +335,33 @@ class MLPreprocessor:
             if col not in df_processed.columns:
                 continue
                 
-            Q1 = df_processed[col].quantile(0.25)
-            Q3 = df_processed[col].quantile(0.75)
+            Q1  = df_processed[col].quantile(0.25)
+            Q3  = df_processed[col].quantile(0.75)
             IQR = Q3 - Q1
             
             lower_bound = Q1 - 1.5 * IQR
             upper_bound = Q3 + 1.5 * IQR
             
-            df_processed = df_processed[
-                (df_processed[col] >= lower_bound) & (df_processed[col] <= upper_bound)
-            ]
+            df_processed = df_processed[(df_processed[col] >= lower_bound) & (df_processed[col] <= upper_bound)]
         
         removed_rows = initial_rows - len(df_processed)
         self.log_step("Remove Outliers (IQR)", f"Removed {removed_rows} rows with outliers")
         
         return df_processed
-    
     # =================== DATA TYPE CONVERSION ===================
     
     def convert_data_types(self, df: pd.DataFrame, conversion_map: Dict[str, str], optimize_memory: bool = True) -> pd.DataFrame:
         """
-        Convert data types for optimization and proper analysis.
+        → Convert data types for optimization and proper analysis.
         
         Args:
-            df: Input DataFrame
-            conversion_map: Dictionary mapping column names to target data types
+            df             : Input DataFrame
+            conversion_map : Dictionary mapping column names to target data types
                         {'col_name': 'target_type'} where target_type can be:
-                        'category', 'datetime', 'boolean', 'int8', 'int16', 'int32', 'int64',
-                        'float32', 'float64', 'string'
+                        'category', 'datetime', 'boolean', 'int8', 'int16', 'int32', 'int64','float32', 'float64', 'string'
             optimize_memory: Whether to optimize numeric types for memory usage
-            
-        Returns:
-            DataFrame with converted data types
+        
+        Returns → DataFrame with converted data types
         """
         if not isinstance(df, pd.DataFrame):
             raise TypeError("Input 'df' must be a pandas DataFrame")
@@ -482,24 +432,20 @@ class MLPreprocessor:
         except Exception as e:
             print(f"❌ Error in data type conversion: {str(e)}")
             raise
-    
     # =================== FEATURE ENGINEERING ===================
     
-    def create_datetime_features(self, df: pd.DataFrame, datetime_cols: List[str], 
-                                features: List[str] = None) -> pd.DataFrame:
+    def create_datetime_features(self, df: pd.DataFrame, datetime_cols: List[str], features: List[str] = None) -> pd.DataFrame:
         """
-        Create datetime features from datetime columns.
+        → Create datetime features from datetime columns.
         
         Args:
-            df: Input DataFrame
-            datetime_cols: List of datetime column names
-            features: List of features to create. Options: 
-                    ['year', 'month', 'day', 'hour', 'minute', 'weekday', 
-                    'is_weekend', 'quarter', 'day_of_year', 'week_of_year']
+            df            : Input DataFrame
+            datetime_cols : List of datetime column names
+            features      : List of features to create. Options: 
+                    ['year', 'month', 'day', 'hour', 'minute', 'weekday', 'is_weekend', 'quarter', 'day_of_year', 'week_of_year']
                     If None, creates all features
         
-        Returns:
-            DataFrame with new datetime features
+        Returns → DataFrame with new datetime features
         """
         if features is None:
             features = ['year', 'month', 'day', 'weekday', 'is_weekend', 'quarter']
@@ -566,11 +512,11 @@ class MLPreprocessor:
     
     def create_mathematical_features(self, df: pd.DataFrame, feature_operations: Dict[str, Dict]) -> pd.DataFrame:
         """
-        Create mathematical features from existing numeric columns.
+        → Create mathematical features from existing numeric columns.
         
         Args:
-            df: Input DataFrame
-            feature_operations: Dictionary defining mathematical operations
+            df                 : Input DataFrame
+            feature_operations : Dictionary defining mathematical operations
                             {
                                 'new_feature_name': {
                                 'operation': 'ratio|difference|product|sum',
@@ -578,8 +524,7 @@ class MLPreprocessor:
                                 }
                             }
         
-        Returns:
-            DataFrame with new mathematical features
+        Returns → DataFrame with new mathematical features
         """
         df_engineered = df.copy()
         created_features = []
@@ -626,11 +571,11 @@ class MLPreprocessor:
     
     def create_binning_features(self, df: pd.DataFrame, binning_config: Dict[str, Dict]) -> pd.DataFrame:
         """
-        Create binned/discretized features from continuous variables.
+        → Create binned/discretized features from continuous variables.
         
         Args:
-            df: Input DataFrame
-            binning_config: Dictionary defining binning operations
+            df             : Input DataFrame
+            binning_config : Dictionary defining binning operations
                         {
                             'new_feature_name': {
                             'column': 'source_column',
@@ -641,18 +586,17 @@ class MLPreprocessor:
                             }
                         }
         
-        Returns:
-            DataFrame with new binned features
+        Returns → DataFrame with new binned features
         """
-        df_engineered = df.copy()
+        df_engineered    = df.copy()
         created_features = []
         
         for feature_name, config in binning_config.items():
             source_col = config.get('column')
-            method = config.get('method', 'equal_width')
-            bins = config.get('bins', 5)
-            bin_edges = config.get('bin_edges')
-            labels = config.get('labels')
+            method     = config.get('method', 'equal_width')
+            bins       = config.get('bins', 5)
+            bin_edges  = config.get('bin_edges')
+            labels     = config.get('labels')
             
             if source_col not in df_engineered.columns:
                 print(f"⚠️ Warning: Column '{source_col}' not found. Skipping {feature_name}")
@@ -681,25 +625,18 @@ class MLPreprocessor:
         print(f"📝 {step_message}")
         
         return df_engineered
-    
     # =================== FEATURE SCALING ===================
     
-    def scale_features(
-        self,
-        df: pd.DataFrame,
-        columns: Optional[List[str]] = None,
-        method: str = 'standard'
-    ) -> pd.DataFrame:
+    def scale_features(self,df: pd.DataFrame,columns: Optional[List[str]] = None,method: str = 'standard') -> pd.DataFrame:
         """
-        Scale numerical features using various methods.
+        → Scale numerical features using various methods.
         
         Args:
-            df: Input DataFrame
+            df     : Input DataFrame
             columns: List of columns to scale (if None, scales all numeric columns)
-            method: Scaling method ('standard', 'minmax', 'robust')
-            
-        Returns:
-            DataFrame with scaled features
+            method : Scaling method ('standard', 'minmax', 'robust')
+        
+        Returns → DataFrame with scaled features
         """
         if columns is None:
             columns = df.select_dtypes(include=[np.number]).columns.tolist()
@@ -725,27 +662,19 @@ class MLPreprocessor:
         self.log_step("Feature Scaling", f"Applied {method} scaling to {len(columns)} columns")
         
         return df_processed
-    
     # =================== DATA BALANCING ===================
     
-    def balance_data(
-        self,
-        X: pd.DataFrame,
-        y: pd.Series,
-        method: str = 'smote',
-        random_state: int = 42
-    ) -> Tuple[pd.DataFrame, pd.Series]:
+    def balance_data(self,X: pd.DataFrame,y: pd.Series,method: str = 'smote',random_state: int = 42) -> Tuple[pd.DataFrame, pd.Series]:
         """
-        Balance imbalanced datasets using various techniques.
+        → Balance imbalanced datasets using various techniques.
         
         Args:
-            X: Feature DataFrame
-            y: Target Series
-            method: Balancing method ('smote', 'random_over', 'random_under', 'smote_tomek')
+            X           : Feature DataFrame
+            y           : Target Series
+            method      : Balancing method ('smote', 'random_over', 'random_under', 'smote_tomek')
             random_state: Random state for reproducibility
-            
-        Returns:
-            Tuple of balanced (X, y)
+        
+        Returns → Tuple of balanced (X, y)
         """
         # Record original class distribution
         original_counts = y.value_counts().to_dict()
@@ -770,25 +699,23 @@ class MLPreprocessor:
         
         # Store balancing information
         self.balancing_info = {
-            'method': method,
+            'method'         : method,
             'original_counts': original_counts,
-            'new_counts': new_counts,
-            'original_total': len(y),
-            'new_total': len(y_balanced)
-        }
+            'new_counts'     : new_counts,
+            'original_total' : len(y),
+            'new_total'      : len(y_balanced)}
         
         self.log_step("Data Balancing", f"Applied {method}: {len(y)} → {len(y_balanced)} samples")
         
         return pd.DataFrame(X_balanced, columns=X.columns), pd.Series(y_balanced, name=y.name)
-    
     # =================== UTILITY METHODS ===================
     
+    # Get summary of data balancing operations
     def get_balancing_summary(self) -> Dict:
-        """Get summary of data balancing operations."""
         return self.balancing_info.copy()
     
+    # Reset all stored preprocessor state
     def reset_preprocessor(self) -> None:
-        """Reset all stored preprocessor state."""
         self.scalers = {}
         self.imputers = {}
         self.encoders = {}
