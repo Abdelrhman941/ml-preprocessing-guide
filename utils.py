@@ -4,12 +4,16 @@ import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
 from sklearn.datasets import load_iris, load_wine, load_breast_cancer, load_diabetes
-from sklearn.model_selection import cross_val_score, learning_curve
+from sklearn.model_selection import cross_val_score, learning_curve, validation_curve
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 from sklearn.metrics import (
     accuracy_score, f1_score, roc_auc_score, 
     confusion_matrix, mean_squared_error, r2_score, mean_absolute_error,
-    roc_curve, auc)
+    roc_curve, auc, classification_report, precision_score, recall_score
+)
+from sklearn.preprocessing import label_binarize
+import seaborn as sns
+import matplotlib.pyplot as plt
 import xgboost as xgb
 import lightgbm as lgb
 import warnings
@@ -17,6 +21,46 @@ warnings.filterwarnings('ignore')
 
 # Import configuration
 from config import HYPERPARAMETER_GRIDS, MODEL_CONFIG, COLOR_SCHEMES
+
+def detect_task_type(y):
+    """
+    Automatically detect if the target variable is for classification or regression.
+    
+    Args:
+        y: Target variable (pandas Series or array-like)
+    
+    Returns:
+        str: 'classification' or 'regression'
+    """
+    # Convert to pandas Series if it isn't already
+    if not isinstance(y, pd.Series):
+        y = pd.Series(y)
+    
+    # Check if target is numeric
+    is_numeric = pd.api.types.is_numeric_dtype(y)
+    
+    if not is_numeric:
+        # Non-numeric data is likely classification
+        return 'classification'
+    
+    # For numeric data, check characteristics
+    unique_values = y.nunique()
+    total_values = len(y)
+    
+    # If all values are integers and there are relatively few unique values
+    if y.dtype in ['int64', 'int32'] and unique_values <= 20:
+        return 'classification'
+    
+    # If there are very few unique values relative to total (less than 5% and max 50)
+    if unique_values <= max(10, total_values * 0.05) and unique_values <= 50:
+        return 'classification'
+    
+    # Check if all values are whole numbers (could be classification)
+    if all(y == y.astype(int)) and unique_values <= 100:
+        return 'classification'
+    
+    # Otherwise, assume regression
+    return 'regression'
 
 # Load sample datasets for testing and demonstration
 def load_sample_dataset(dataset_name: str):
@@ -104,29 +148,9 @@ def evaluate_model(model, X, y, task_type: str = 'classification', metric: str =
         st.error(f"Error evaluating model: {e}")
         return 0.0, 0.0
 
-# Create interactive confusion matrix
+# Create interactive confusion matrix (legacy function - redirects to enhanced version)
 def plot_confusion_matrix(y_true, y_pred, labels=None):
-    cm = confusion_matrix(y_true, y_pred)
-    
-    if labels is None:
-        labels = [f"Class {i}" for i in range(len(cm))]
-    
-    fig = px.imshow(
-        cm,
-        x=labels,
-        y=labels,
-        color_continuous_scale='Blues',
-        text_auto=True,
-        title="Confusion Matrix"
-    )
-    
-    fig.update_layout(
-        xaxis_title="Predicted",
-        yaxis_title="Actual",
-        height=400
-    )
-    
-    return fig
+    return plot_confusion_matrix_enhanced(y_true, y_pred, labels, normalize=False)
 
 # Create feature importance plot
 def plot_feature_importance(model, feature_names, top_n: int = 15):
@@ -158,41 +182,12 @@ def plot_feature_importance(model, feature_names, top_n: int = 15):
     
     return fig
 
-# Plot ROC curve for classification models
+# Plot ROC curves for binary and multiclass classification
 def plot_roc_curve(model, X, y):
-    try:
-        y_pred_proba = model.predict_proba(X)[:, 1]
-        fpr, tpr, _ = roc_curve(y, y_pred_proba)
-        roc_auc = auc(fpr, tpr)
-        
-        fig = go.Figure()
-        
-        fig.add_trace(go.Scatter(
-            x=fpr, y=tpr,
-            mode='lines',
-            name=f'ROC Curve (AUC = {roc_auc:.3f})',
-            line=dict(color='blue', width=2)
-        ))
-        
-        fig.add_trace(go.Scatter(
-            x=[0, 1], y=[0, 1],
-            mode='lines',
-            name='Random Classifier',
-            line=dict(color='red', dash='dash')
-        ))
-        
-        fig.update_layout(
-            title='ROC Curve',
-            xaxis_title='False Positive Rate',
-            yaxis_title='True Positive Rate',
-            height=400,
-            showlegend=True
-        )
-        
-        return fig
-    except Exception as e:
-        st.error(f"Error creating ROC curve: {e}")
-        return None
+    """
+    Legacy function - redirects to plot_roc_curve_multiclass for compatibility.
+    """
+    return plot_roc_curve_multiclass(model, X, y)
 
 # Plot actual vs predicted values for regression
 def plot_regression_results(y_true, y_pred):
@@ -249,26 +244,185 @@ def get_model_metrics_summary(model, X_test, y_test, task_type: str):
         metrics = {
             'Accuracy': accuracy_score(y_test, y_pred),
             'F1 Score': f1_score(y_test, y_pred, average='weighted'),
+            'Precision': precision_score(y_test, y_pred, average='weighted'),
+            'Recall': recall_score(y_test, y_pred, average='weighted')
         }
         
-        # Add ROC AUC for binary classification
-        if len(np.unique(y_test)) == 2:
-            try:
-                y_pred_proba = model.predict_proba(X_test)[:, 1]
-                metrics['ROC AUC'] = roc_auc_score(y_test, y_pred_proba)
-            except:
-                pass
+        # Add ROC AUC for binary and multiclass classification
+        try:
+            unique_classes = np.unique(y_test)
+            if len(unique_classes) == 2:
+                # Binary classification
+                if hasattr(model, 'predict_proba'):
+                    y_pred_proba = model.predict_proba(X_test)[:, 1]
+                    metrics['ROC AUC'] = roc_auc_score(y_test, y_pred_proba)
+                elif hasattr(model, 'decision_function'):
+                    y_scores = model.decision_function(X_test)
+                    metrics['ROC AUC'] = roc_auc_score(y_test, y_scores)
+            elif len(unique_classes) > 2:
+                # Multiclass classification
+                if hasattr(model, 'predict_proba'):
+                    y_pred_proba = model.predict_proba(X_test)
+                    metrics['ROC AUC (OvR)'] = roc_auc_score(y_test, y_pred_proba, multi_class='ovr', average='weighted')
+        except Exception as e:
+            print(f"Warning: Could not compute ROC AUC: {e}")
     else:
         metrics = {
             'R² Score': r2_score(y_test, y_pred),
-            'MSE'     : mean_squared_error(y_test, y_pred),
-            'MAE'     : mean_absolute_error(y_test, y_pred),
-            'RMSE'    : np.sqrt(mean_squared_error(y_test, y_pred))
+            'MSE': mean_squared_error(y_test, y_pred),
+            'MAE': mean_absolute_error(y_test, y_pred),
+            'RMSE': np.sqrt(mean_squared_error(y_test, y_pred))
         }
     
     return metrics
 
-# Create a formatted display of model metrics
+def get_classification_report(y_test, y_pred, target_names=None):
+    """
+    Generate comprehensive classification report.
+    
+    Args:
+        y_test: True labels
+        y_pred: Predicted labels
+        target_names: List of target class names
+    
+    Returns:
+        str: Formatted classification report
+    """
+    return classification_report(y_test, y_pred, target_names=target_names)
+
+def plot_confusion_matrix_enhanced(y_true, y_pred, labels=None, normalize=False):
+    """
+    Create enhanced confusion matrix with better styling.
+    
+    Args:
+        y_true: True labels
+        y_pred: Predicted labels
+        labels: Class labels
+        normalize: Whether to normalize the confusion matrix
+    
+    Returns:
+        Plotly figure
+    """
+    cm = confusion_matrix(y_true, y_pred)
+    
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
+        title = "Normalized Confusion Matrix"
+        text_template = ".2%"
+    else:
+        title = "Confusion Matrix"
+        text_template = "d"
+    
+    if labels is None:
+        labels = [f"Class {i}" for i in range(len(cm))]
+    
+    fig = px.imshow(
+        cm,
+        x=labels,
+        y=labels,
+        color_continuous_scale='Blues',
+        text_auto=True,
+        title=title,
+        aspect="auto"
+    )
+    
+    fig.update_layout(
+        xaxis_title="Predicted",
+        yaxis_title="Actual",
+        height=500,
+        width=500
+    )
+    
+    return fig
+
+def plot_roc_curve_multiclass(model, X_test, y_test, class_names=None):
+    """
+    Plot ROC curves for multiclass classification.
+    
+    Args:
+        model: Trained model with predict_proba method
+        X_test: Test features
+        y_test: Test labels
+        class_names: List of class names
+    
+    Returns:
+        Plotly figure
+    """
+    try:
+        y_pred_proba = model.predict_proba(X_test)
+        unique_classes = np.unique(y_test)
+        n_classes = len(unique_classes)
+        
+        if n_classes == 2:
+            # Binary classification
+            fpr, tpr, _ = roc_curve(y_test, y_pred_proba[:, 1])
+            roc_auc = auc(fpr, tpr)
+            
+            fig = go.Figure()
+            
+            fig.add_trace(go.Scatter(
+                x=fpr, y=tpr,
+                mode='lines',
+                name=f'ROC Curve (AUC = {roc_auc:.3f})',
+                line=dict(color='blue', width=2)
+            ))
+            
+            fig.add_trace(go.Scatter(
+                x=[0, 1], y=[0, 1],
+                mode='lines',
+                name='Random Classifier',
+                line=dict(color='red', dash='dash')
+            ))
+            
+            fig.update_layout(
+                title='ROC Curve',
+                xaxis_title='False Positive Rate',
+                yaxis_title='True Positive Rate',
+                height=500,
+                showlegend=True
+            )
+            
+        else:
+            # Multiclass classification - One vs Rest
+            y_test_binarized = label_binarize(y_test, classes=unique_classes)
+            
+            fig = go.Figure()
+            
+            for i in range(n_classes):
+                fpr, tpr, _ = roc_curve(y_test_binarized[:, i], y_pred_proba[:, i])
+                roc_auc = auc(fpr, tpr)
+                
+                class_name = class_names[i] if class_names else f'Class {unique_classes[i]}'
+                
+                fig.add_trace(go.Scatter(
+                    x=fpr, y=tpr,
+                    mode='lines',
+                    name=f'{class_name} (AUC = {roc_auc:.3f})',
+                    line=dict(width=2)
+                ))
+            
+            fig.add_trace(go.Scatter(
+                x=[0, 1], y=[0, 1],
+                mode='lines',
+                name='Random Classifier',
+                line=dict(color='black', dash='dash')
+            ))
+            
+            fig.update_layout(
+                title='ROC Curves (One vs Rest)',
+                xaxis_title='False Positive Rate',
+                yaxis_title='True Positive Rate',
+                height=500,
+                showlegend=True
+            )
+        
+        return fig
+        
+    except Exception as e:
+        st.error(f"Error creating ROC curve: {e}")
+        return None
+
+# Create a formatted display of model metrics with color coding
 def create_metrics_display(metrics: dict):
     cols = st.columns(len(metrics))
     
@@ -276,15 +430,59 @@ def create_metrics_display(metrics: dict):
         with cols[i]:
             if isinstance(value, float):
                 formatted_value = f"{value:.4f}"
+                
+                # Color coding based on metric value
+                if metric_name.lower() in ['accuracy', 'f1 score', 'precision', 'recall', 'roc auc', 'r² score']:
+                    # Higher is better metrics
+                    if value > 0.8:
+                        score_color = "green"
+                        performance = "Excellent"
+                    elif value > 0.6:
+                        score_color = "orange"
+                        performance = "Good"
+                    else:
+                        score_color = "red"
+                        performance = "Poor"
+                elif metric_name.lower() in ['mse', 'mae', 'rmse']:
+                    # Lower is better metrics - relative assessment
+                    score_color = "blue"  # Neutral for regression metrics
+                    performance = "Metric"
+                else:
+                    score_color = "blue"
+                    performance = "Metric"
+                
+                # Enhanced metric display with color
+                st.markdown(f"""
+                    <div style="
+                        padding: 1rem;
+                        border-radius: 0.5rem;
+                        border: 2px solid {score_color};
+                        background-color: rgba(255,255,255,0.05);
+                        text-align: center;
+                        margin-bottom: 0.5rem;
+                    ">
+                        <div style="
+                            font-size: 2rem;
+                            font-weight: bold;
+                            color: {score_color};
+                            margin-bottom: 0.25rem;
+                        ">{formatted_value}</div>
+                        <div style="
+                            font-size: 0.9rem;
+                            color: #666;
+                            margin-bottom: 0.25rem;
+                        ">{metric_name}</div>
+                        <div style="
+                            font-size: 0.8rem;
+                            color: {score_color};
+                            font-weight: bold;
+                        ">{performance}</div>
+                    </div>
+                """, unsafe_allow_html=True)
             else:
                 formatted_value = str(value)
-            
-            st.markdown(f"""
-                <div class="metric-card">
-                    <div class="metric-value">{formatted_value}</div>
-                    <div class="metric-label">{metric_name}</div>
-                </div>
-            """, unsafe_allow_html=True)
+                # Simple display for non-numeric values
+                st.metric(metric_name, formatted_value)
 
 def detect_and_remove_duplicates(df: pd.DataFrame) -> tuple[pd.DataFrame, int]:
     """
@@ -409,6 +607,109 @@ def plot_learning_curves(model, X, y, task_type: str = 'classification', cv: int
         st.error(f"Error generating learning curves: {e}")
         return None
 
+def plot_validation_curve(model, X, y, param_name, param_range, task_type='classification', cv=5):
+    """
+    Generate validation curves for hyperparameter tuning visualization.
+    
+    Args:
+        model: Model instance
+        X: Feature matrix
+        y: Target vector
+        param_name: Name of parameter to vary
+        param_range: Range of parameter values to test
+        task_type: 'classification' or 'regression'
+        cv: Number of cross-validation folds
+    
+    Returns:
+        Plotly figure with validation curves
+    """
+    try:
+        # Define scoring metric based on task type
+        scoring = 'accuracy' if task_type == 'classification' else 'neg_mean_squared_error'
+        
+        # Generate validation curve data
+        train_scores, val_scores = validation_curve(
+            model, X, y, 
+            param_name=param_name,
+            param_range=param_range,
+            cv=cv, 
+            scoring=scoring,
+            n_jobs=-1
+        )
+        
+        # Calculate means and standard deviations
+        train_mean = train_scores.mean(axis=1)
+        train_std = train_scores.std(axis=1)
+        val_mean = val_scores.mean(axis=1)
+        val_std = val_scores.std(axis=1)
+        
+        # For regression, convert negative MSE to positive
+        if task_type == 'regression':
+            train_mean = -train_mean
+            val_mean = -val_mean
+        
+        # Create the plot
+        fig = go.Figure()
+        
+        # Training scores
+        fig.add_trace(go.Scatter(
+            x=param_range,
+            y=train_mean,
+            mode='lines+markers',
+            name='Training Score',
+            line=dict(color=COLOR_SCHEMES['primary'], width=2),
+            marker=dict(size=8)
+        ))
+        
+        # Training score confidence interval
+        fig.add_trace(go.Scatter(
+            x=list(param_range) + list(param_range[::-1]),
+            y=list(train_mean + train_std) + list((train_mean - train_std)[::-1]),
+            fill='toself',
+            fillcolor=f"rgba(91, 192, 190, 0.2)",
+            line=dict(color='rgba(255,255,255,0)'),
+            showlegend=False,
+            name='Training ±1 std'
+        ))
+        
+        # Validation scores
+        fig.add_trace(go.Scatter(
+            x=param_range,
+            y=val_mean,
+            mode='lines+markers',
+            name='Validation Score',
+            line=dict(color=COLOR_SCHEMES['secondary'], width=2),
+            marker=dict(size=8)
+        ))
+        
+        # Validation score confidence interval
+        fig.add_trace(go.Scatter(
+            x=list(param_range) + list(param_range[::-1]),
+            y=list(val_mean + val_std) + list((val_mean - val_std)[::-1]),
+            fill='toself',
+            fillcolor=f"rgba(58, 80, 107, 0.2)",
+            line=dict(color='rgba(255,255,255,0)'),
+            showlegend=False,
+            name='Validation ±1 std'
+        ))
+        
+        # Update layout
+        metric_name = 'Accuracy' if task_type == 'classification' else 'Mean Squared Error'
+        fig.update_layout(
+            title=f'Validation Curve - {param_name}',
+            xaxis_title=param_name,
+            yaxis_title=metric_name,
+            height=500,
+            showlegend=True
+        )
+        
+        return fig
+        
+    except Exception as e:
+        st.error(f"Error generating validation curve: {e}")
+        return None
+
+# Create an enhanced preprocessing summary with detailed information.
 def create_enhanced_preprocessing_summary(steps: list, dataset_info: dict):
     """
     → Create an enhanced preprocessing summary with detailed information.

@@ -54,8 +54,7 @@ def main():
     st.markdown("""
     <div style="text-align: center; margin-top: 2rem; padding: 1rem; opacity: 0.7;">
         <p>🚀 ML Studio v2.0.0 | Built with ❤️ using Streamlit | 
-        <a href="https://github.com/Abdelrhman941/ml-preprocessing-guide.git" target="_blank">GitHub</a> | 
-        <a href="#" onclick="st.session_state.page='home'; window.location.reload();">Documentation</a>
+        <a href="https://github.com/Abdelrhman941/ml-preprocessing-guide.git" target="_blank">GitHub</a> 
         </p>
     </div>
     """, unsafe_allow_html=True)

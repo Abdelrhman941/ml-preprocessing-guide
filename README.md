@@ -1,3 +1,42 @@
+# 🚀 **ML Studio v2.0 - Complete Machine Learning Pipeline**
+
+> **MAJOR UPDATE**: Fixed critical training errors and enhanced with comprehensive evaluation metrics!
+
+## ✨ **Latest Improvements (v2.0)**
+
+### 🔧 **Critical Fixes**
+- ✅ **Fixed Training Error**: Resolved "Unknown label type: continuous" error with automatic task detection
+- ✅ **Enhanced Task Detection**: Automatic classification vs regression detection based on target analysis
+- ✅ **Robust Validation**: Comprehensive input validation and error handling
+
+### 📊 **Enhanced Evaluation Metrics**
+
+#### Classification Metrics:
+- ✅ Accuracy Score with multi-class support
+- ✅ F1 Score (weighted average for multi-class)
+- ✅ Precision & Recall scores
+- ✅ ROC-AUC with proper label binarization
+- ✅ Detailed Classification Report
+- ✅ Enhanced Confusion Matrix (normalized & standard)
+- ✅ Multi-class ROC Curves (One-vs-Rest)
+
+#### Regression Metrics:
+- ✅ Mean Squared Error (MSE)
+- ✅ Mean Absolute Error (MAE) 
+- ✅ R² Score
+- ✅ Root Mean Squared Error (RMSE)
+- ✅ Comprehensive Residual Analysis
+- ✅ Q-Q Plot for normality testing
+- ✅ Error distribution visualization
+
+### 🎯 **Advanced Features**
+- ✅ **Validation Curves**: Interactive hyperparameter tuning visualization
+- ✅ **Learning Curves**: Bias-variance analysis with interpretation guides
+- ✅ **Enhanced Preprocessing**: Comprehensive data balancing and scaling
+- ✅ **Professional Visualizations**: Seaborn/Matplotlib/Plotly integration
+
+---
+
 # ✅ **Complete Machine Learning Preprocessing Guide**
 
 <details> <summary style="font-size: 20px; font-weight: bold; cursor: pointer;"> 1. Data Understanding & Inspection </summary>
