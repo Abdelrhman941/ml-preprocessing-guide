@@ -161,8 +161,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - **User Guide**: [guide/USER_GUIDE.md](guide/USER_GUIDE.md) - For end users
 - **Process Guide**: [guide/EXPLAIN_PROCESS.md](guide/EXPLAIN_PROCESS.md) - Process explanation
-- **Issues**: [GitHub Issues](https://github.com/Abdelrhman941/ml-preprocessing-guide/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/Abdelrhman941/ml-preprocessing-guide/discussions)
 
 ---
 
