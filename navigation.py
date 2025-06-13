@@ -1,42 +1,39 @@
 import streamlit as st
-import pandas as pd
-from gui.utils import load_sample_dataset
 
-
+# ------ Initialize all session state variables ------
 def initialize_session_state():
-    """Initialize all session state variables."""
-    from gui.preprocessor import MLPreprocessor
+    from preprocessor import MLPreprocessor
     
     default_values = {
-        'page': 'home',
-        'dataset': None,
-        'target': None,
-        'task_type': None,
-        'training_logs': [],
-        'best_model': None,
-        'best_params': {},
-        'training_results': {},
-        'X_train': None,
-        'X_test': None,
-        'y_train': None,
-        'y_test': None,
-        'feature_importance': None,
-        'confusion_matrix': None,        'preprocessing_steps': [],
-        'model_name': None,
-        'model_params': {},
-        'metric': 'accuracy',
-        'tuning_method': 'None',
-        'use_cv': True,
-        'preprocessor': MLPreprocessor()
+        'page'               : 'home',
+        'dataset'            : None,
+        'target'             : None,
+        'task_type'          : None,
+        'training_logs'      : [],
+        'best_model'         : None,
+        'best_params'        : {},
+        'training_results'   : {},
+        'X_train'            : None,
+        'X_test'             : None,
+        'y_train'            : None,
+        'y_test'             : None,
+        'feature_importance' : None,
+        'confusion_matrix'   : None,        
+        'preprocessing_steps': [],
+        'model_name'         : None,
+        'model_params'       : {},
+        'metric'             : 'accuracy',
+        'tuning_method'      : 'None',
+        'use_cv'             : True,
+        'preprocessor'       : MLPreprocessor()
     }
     
     for key, default_value in default_values.items():
         if key not in st.session_state:
             st.session_state[key] = default_value
 
-
+# ------ Apply custom CSS for styling ------
 def apply_custom_css():
-    """Apply custom CSS styling for the application."""
     st.markdown("""
     <style>
         .main-header {
@@ -188,9 +185,8 @@ def apply_custom_css():
     </style>
     """, unsafe_allow_html=True)
 
-
+# ------ Create navigation slides with progress bar ------
 def create_navigation_slides():
-    """Create slide-like navigation at the top."""
     pages = [
         ("🏠", "Home", "home"),
         ("📊", "Data Exploration", "data_exploration"),
@@ -243,9 +239,11 @@ def create_navigation_slides():
                 st.session_state.page = page_id
                 st.rerun()
 
-
+# ------ Create quick settings in a collapsible section ------
 def create_quick_settings():
-    """Create quick settings in a collapsible section."""
+    import pandas as pd
+    from utils import load_sample_dataset
+    
     with st.expander("⚙️ Quick Settings", expanded=False):
         col1, col2, col3 = st.columns(3)
         
@@ -273,7 +271,7 @@ def create_quick_settings():
             else:
                 sample_dataset = st.selectbox(
                     "Select Sample Dataset",
-                    ["Iris", "Wine", "Breast Cancer", "Diabetes (Regression)", "California Housing (Regression)"],
+                    ["Iris (Classification)", "Wine (Classification)", "Breast Cancer (Classification)", "Diabetes (Regression)", "California Housing (Regression)"],
                     key="quick_sample_select"
                 )
                 if st.button("Load Sample Dataset", key="quick_load_sample"):
@@ -329,9 +327,8 @@ def create_quick_settings():
                     st.session_state.page = 'training'
                     st.rerun()
 
-
+# ------ Create Previous/Next navigation buttons at the bottom of each page ------
 def create_navigation_buttons():
-    """Create Previous/Next navigation buttons at the bottom of each page."""
     pages = [
         ("🏠", "Home", "home"),
         ("📊", "Data Exploration", "data_exploration"),
@@ -362,9 +359,8 @@ def create_navigation_buttons():
                 st.session_state.page = next_page[2]
                 st.rerun()
 
-
+# ------ Display dataset overview metrics ------
 def display_dataset_overview(df):
-    """Display dataset overview with metrics."""
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
