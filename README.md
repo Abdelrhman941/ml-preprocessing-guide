@@ -525,7 +525,7 @@ print("Label Encoding mapping:", dict(zip(le.classes_, le.transform(le.classes_)
 df_onehot = pd.get_dummies(df, columns=['color'], prefix='color', drop_first=True)
 
 # Method 2: Using sklearn OneHotEncoder
-ohe = OneHotEncoder(sparse=False, drop='first')
+ohe = OneHotEncoder(sparse_output=False, drop='first')
 color_encoded = ohe.fit_transform(df[['color']])
 color_columns = [f'color_{cat}' for cat in ohe.categories_[0][1:]]  # Skip first due to drop='first'
 df_ohe = pd.concat([df, pd.DataFrame(color_encoded, columns=color_columns)], axis=1)
@@ -630,7 +630,7 @@ Normalize feature ranges to prevent algorithms from being biased toward features
 ### **⚠️ Critical Rule**
 <div style="background: rgba(220, 53, 69, 0.1); border-left: 4px solid #dc3545; padding: 15px; margin: 15px 0;">
 
-When using **MinMaxScaler** or **StandardScaler**, you should use `fit` on **train data only** and use `transform` on **test data** to prevent data leakage!
+**⚠️ Remember:** Always fit the scaler on training data only, then transform both training and test data to prevent data leakage!
 
 </div>
 
@@ -739,9 +739,6 @@ for feature in numerical_cols[:1]:  # Compare first numerical feature
 
 </div>
 
-<div style="background: rgba(220, 53, 69, 0.1); border-left: 4px solid #dc3545; padding: 15px; margin: 15px 0;">
-
-**⚠️ Remember:** Always fit the scaler on training data only, then transform both training and test data to prevent data leakage!
 
 </div>
 
